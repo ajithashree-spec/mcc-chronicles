@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mcc-oxblood: #4A1521;
+  --mcc-heritage: #6B2130;
+  --mcc-shadow: #340B15;
+  --mcc-brass: #B88E3D;
+  --mcc-champagne: #F4EBD9;
+  --mcc-midnight: #16202C;
+  --mcc-alabaster: #FBFBF9;
+  --mcc-border: #E8E5DD;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--mcc-alabaster);
+  color: var(--mcc-midnight);
+}
+
+h1, h2, h3, h4, .font-headline {
+  font-family: 'Newsreader', serif;
+}

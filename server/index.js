@@ -1,0 +1,124 @@
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const path = require('path');
+const pool = require('./config/db');
+
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// CORS configuration supporting local development frontends
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+        return callback(null, true);
+      }
+      return callback(null, true); // Dev-friendly fallback
+    },
+    credentials: true,
+  })
+);
+
+// Body Parsing Middlewares
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Health Check Endpoint
+app.get('/api/health', async (req, res, next) => {
+  try {
+    const [rows] = await pool.query('SELECT 1 as alive');
+    return res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: rows && rows.length > 0 ? 'connected' : 'unknown',
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+      error: error.message,
+    });
+  }
+});
+
+// Root friendly greeting
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to the MCC Chronicles API',
+    health: '/api/health',
+    version: '1.0.0'
+  });
+});
+
+// Mount API Routes
+const authRoutes = require('./routes/authRoutes');
+const departmentRoutes = require('./routes/departmentRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const articleRoutes = require('./routes/articleRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const commentRoutes = require('./routes/commentRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const userRoutes = require('./routes/userRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const circularRoutes = require('./routes/circularRoutes');
+const searchRoutes = require('./routes/searchRoutes');
+const galleryRoutes = require('./routes/galleryRoutes');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/departments', departmentRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/articles', articleRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/circulars', circularRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/gallery', galleryRoutes);
+
+// 404 Handler for undefined API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `Cannot ${req.method} ${req.originalUrl} - Route not found`,
+  });
+});
+
+// Centralized Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error('[SERVER ERROR]:', err);
+  const statusCode = err.status || err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    error: err.message || 'Internal Server Error',
+  });
+});
+
+// Export app for test suites
+module.exports = app;
+
+// Start server when run directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`[MCC Chronicles Server] Running on http://localhost:${PORT}`);
+    console.log(`[MCC Chronicles Server] Health check available at http://localhost:${PORT}/api/health`);
+  });
+}
