@@ -1,24 +1,212 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --mcc-oxblood: #4A1521;
-  --mcc-heritage: #6B2130;
-  --mcc-shadow: #340B15;
-  --mcc-brass: #B88E3D;
-  --mcc-champagne: #F4EBD9;
-  --mcc-midnight: #16202C;
-  --mcc-alabaster: #FBFBF9;
-  --mcc-border: #E8E5DD;
+@layer base {
+  :root {
+    --mcc-maroon: #6b1420;
+    --mcc-maroon-dark: #480c14;
+    --mcc-navy: #132238;
+    --mcc-gold: #c59b27;
+    --mcc-paper: #fbf9f4;
+    --mcc-halfwhite: #f5f2eb;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: #fbf9f4;
+  }
+
+  body {
+    background-color: #fbf9f4;
+    color: #111827;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: 'Playfair Display', Georgia, Cambria, serif;
+    letter-spacing: -0.015em;
+  }
+
+  /* Accessibility Large Text Mode */
+  html.large-text {
+    font-size: 112.5%;
+  }
 }
 
-body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: var(--mcc-alabaster);
-  color: var(--mcc-midnight);
+/* Broadsheet Newspaper Aesthetic Utilities */
+@layer components {
+  /* Ornate double border classic broadsheet rule */
+  .broadsheet-rule-double {
+    border-top: 3px double rgba(107, 20, 32, 0.4);
+    border-bottom: 1px solid rgba(107, 20, 32, 0.2);
+  }
+
+  /* Broadsheet hairline rule */
+  .broadsheet-hairline {
+    border-color: rgba(107, 20, 32, 0.2);
+  }
+
+  /* Broadsheet column divider */
+  .broadsheet-col-divider {
+    border-right: 1px solid rgba(19, 34, 56, 0.12);
+  }
+
+  /* Broadsheet Typographic Prose Styles */
+  .broadsheet-prose {
+    color: #1a1a1a;
+    font-family: 'Playfair Display', Georgia, Cambria, serif;
+    font-size: 1.125rem;
+    line-height: 1.85;
+  }
+
+  .broadsheet-prose p {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Classic newspaper drop-cap on first letter */
+  .broadsheet-prose p:first-of-type::first-letter,
+  .drop-cap::first-letter {
+    float: left;
+    font-size: 4.25rem;
+    line-height: 0.8;
+    padding-top: 4px;
+    padding-right: 12px;
+    padding-bottom: 2px;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 800;
+    color: var(--mcc-maroon);
+  }
+
+  .broadsheet-prose blockquote {
+    border-left: 3px solid var(--mcc-gold);
+    padding-left: 1.25rem;
+    margin: 2rem 0;
+    font-style: italic;
+    color: #374151;
+    font-size: 1.25rem;
+    line-height: 1.6;
+    background: rgba(197, 155, 39, 0.05);
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .broadsheet-prose h2,
+  .broadsheet-prose h3 {
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 2.25rem;
+    margin-bottom: 1rem;
+    line-height: 1.25;
+  }
+
+  .broadsheet-prose h2 {
+    font-size: 1.75rem;
+    border-bottom: 1px solid rgba(107, 20, 32, 0.15);
+    padding-bottom: 0.5rem;
+  }
+
+  .broadsheet-prose h3 {
+    font-size: 1.35rem;
+  }
+
+  .broadsheet-prose img {
+    margin: 2rem 0;
+    border-radius: 4px;
+    width: 100%;
+    break-inside: avoid;
+  }
+
+  .broadsheet-prose figcaption {
+    font-size: 0.85rem;
+    font-family: 'Inter', sans-serif;
+    color: #4b5563;
+    margin-top: 0.5rem;
+    font-style: italic;
+  }
 }
 
-h1, h2, h3, h4, .font-headline {
-  font-family: 'Newsreader', serif;
+/* =========================================================================
+   TASK 56: Comprehensive Broadsheet Print Stylesheet
+   ========================================================================= */
+@media print {
+  /* Hide non-printable elements */
+  header,
+  nav,
+  footer,
+  aside,
+  .no-print,
+  #comments,
+  button,
+  [role="progressbar"],
+  .fixed,
+  .sticky {
+    display: none !important;
+  }
+
+  /* Reset document canvas to pure white and black typography */
+  html,
+  body {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    font-family: 'Georgia', 'Times New Roman', serif !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Page setup with margins */
+  @page {
+    margin: 1.8cm 1.5cm 1.8cm 1.5cm;
+    size: A4 portrait;
+  }
+
+  /* Ensure container takes full width */
+  .container,
+  main,
+  article {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Show print-only header */
+  .print-only-header {
+    display: block !important;
+    border-bottom: 2pt solid #000000;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  /* Ensure media and figures do not break awkwardly */
+  img,
+  figure,
+  blockquote,
+  table {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Print link canonical reference */
+  a {
+    color: #000000 !important;
+    text-decoration: none !important;
+  }
+
+  /* High-contrast headlines */
+  h1, h2, h3, h4 {
+    color: #000000 !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
 }

@@ -9,7 +9,7 @@ const pool = require('../config/db');
  */
 async function getPublicCirculars(req, res, next) {
   try {
-    const { target_audience, department_id, limit } = req.query;
+    const { target_audience, department_id, search, limit } = req.query;
 
     let query = `
       SELECT 
@@ -20,6 +20,7 @@ async function getPublicCirculars(req, res, next) {
         c.attachment_url,
         c.department_id,
         d.name AS department_name,
+        d.code AS department_code,
         c.target_audience,
         c.is_pinned,
         c.is_active,
@@ -32,14 +33,20 @@ async function getPublicCirculars(req, res, next) {
     `;
     const params = [];
 
-    if (target_audience) {
+    if (target_audience && target_audience !== 'all') {
       query += ` AND (c.target_audience = ? OR c.target_audience = 'all')`;
       params.push(target_audience);
     }
 
     if (department_id) {
-      query += ` AND c.department_id = ?`;
-      params.push(department_id);
+      query += ` AND (c.department_id = ? OR d.code = ?)`;
+      params.push(department_id, department_id);
+    }
+
+    if (search && search.trim()) {
+      query += ` AND (c.title LIKE ? OR c.circular_number LIKE ? OR c.content LIKE ?)`;
+      const pattern = `%${search.trim()}%`;
+      params.push(pattern, pattern, pattern);
     }
 
     query += ` ORDER BY c.is_pinned DESC, c.publish_date DESC, c.id DESC`;

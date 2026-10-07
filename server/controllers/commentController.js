@@ -129,7 +129,7 @@ async function createComment(req, res, next) {
 }
 
 /**
- * Moderate comment status (approved, pending, spam).
+ * Moderate comment status (approved, pending, rejected, spam).
  * Protected: super_admin, editor only.
  */
 async function updateCommentStatus(req, res, next) {
@@ -137,7 +137,7 @@ async function updateCommentStatus(req, res, next) {
     const { id } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['approved', 'pending', 'spam'];
+    const validStatuses = ['approved', 'pending', 'rejected', 'spam'];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -156,10 +156,19 @@ async function updateCommentStatus(req, res, next) {
 
     const isApproved = status === 'approved' ? 1 : 0;
 
-    await pool.query(
-      'UPDATE comments SET status = ?, is_approved = ? WHERE id = ?',
-      [status, isApproved, id]
-    );
+    try {
+      await pool.query(
+        'UPDATE comments SET status = ?, is_approved = ? WHERE id = ?',
+        [status, isApproved, id]
+      );
+    } catch (dbErr) {
+      // If DB enum does not include 'rejected' yet, fallback gracefully to 'spam'
+      const fallbackStatus = status === 'rejected' ? 'spam' : status;
+      await pool.query(
+        'UPDATE comments SET status = ?, is_approved = ? WHERE id = ?',
+        [fallbackStatus, isApproved, id]
+      );
+    }
 
     const [updatedRows] = await pool.query(
       'SELECT id, article_id, author_name, author_email, content, status, is_approved, created_at FROM comments WHERE id = ?',
@@ -170,6 +179,78 @@ async function updateCommentStatus(req, res, next) {
       success: true,
       message: `Comment status updated to '${status}'`,
       data: updatedRows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Retrieve all comments across all articles for editorial moderation.
+ * Protected: super_admin, editor only.
+ */
+async function getAllComments(req, res, next) {
+  try {
+    const { status, page = 1, limit = 20, search } = req.query;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    const whereClauses = [];
+    const queryParams = [];
+
+    if (status && status !== 'all') {
+      if (status === 'rejected') {
+        whereClauses.push("(c.status = 'rejected' OR c.status = 'spam' OR c.is_approved = 0)");
+      } else {
+        whereClauses.push('c.status = ?');
+        queryParams.push(status);
+      }
+    }
+
+    if (search && search.trim()) {
+      whereClauses.push('(c.content LIKE ? OR c.author_name LIKE ? OR c.author_email LIKE ? OR a.title LIKE ?)');
+      const term = `%${search.trim()}%`;
+      queryParams.push(term, term, term, term);
+    }
+
+    const whereSQL = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) as total FROM comments c LEFT JOIN articles a ON c.article_id = a.id ${whereSQL}`,
+      queryParams
+    );
+    const total = countRows[0]?.total || 0;
+
+    const [rows] = await pool.query(
+      `SELECT 
+         c.id,
+         c.article_id,
+         c.author_name,
+         c.author_email,
+         c.content,
+         c.status,
+         c.is_approved,
+         c.created_at,
+         a.title as article_title,
+         a.slug as article_slug
+       FROM comments c
+       LEFT JOIN articles a ON c.article_id = a.id
+       ${whereSQL}
+       ORDER BY c.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...queryParams, limitNum, offset]
+    );
+
+    return res.status(200).json({
+      success: true,
+      total,
+      data: rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum) || 1,
+      },
     });
   } catch (error) {
     next(error);
@@ -206,6 +287,7 @@ async function deleteComment(req, res, next) {
 
 module.exports = {
   getCommentsByArticle,
+  getAllComments,
   createComment,
   updateCommentStatus,
   deleteComment,

@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 /**
  * Handle user login, password validation, and JWT generation.
@@ -69,6 +70,16 @@ async function login(req, res, next) {
     };
 
     const token = jwt.sign(payload, secret, { expiresIn: '24h' });
+
+    // Asynchronously log authentication audit event
+    logActivity({
+      userId: user.id,
+      action: 'LOGIN',
+      entityType: 'user',
+      entityId: user.id,
+      details: { email: user.email, role: user.role, name: user.name },
+      req,
+    });
 
     return res.status(200).json({
       success: true,

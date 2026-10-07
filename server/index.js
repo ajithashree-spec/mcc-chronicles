@@ -3,12 +3,16 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const pool = require('./config/db');
+const { helmetMiddleware, apiLimiter, authLimiter } = require('./middleware/securityMiddleware');
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Security Headers via Helmet (applied at the top of middleware chain)
+app.use(helmetMiddleware);
 
 // CORS configuration supporting local development frontends
 const allowedOrigins = [
@@ -38,6 +42,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Rate Limiting (Hardened Security)
+app.use('/api/auth/login', authLimiter);
+app.use('/api', apiLimiter);
 
 // Health Check Endpoint
 app.get('/api/health', async (req, res, next) => {
@@ -80,6 +88,16 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const circularRoutes = require('./routes/circularRoutes');
 const searchRoutes = require('./routes/searchRoutes');
 const galleryRoutes = require('./routes/galleryRoutes');
+const auditRoutes = require('./routes/auditRoutes');
+const backupRoutes = require('./routes/backupRoutes');
+const subscriberRoutes = require('./routes/subscriberRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const feedRoutes = require('./routes/feedRoutes');
+const sitemapRoutes = require('./routes/sitemapRoutes');
+const tagRoutes = require('./routes/tagRoutes');
+const pollRoutes = require('./routes/pollRoutes');
+
+const { notFoundHandler, globalErrorHandler } = require('./middleware/errorMiddleware');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/departments', departmentRoutes);
@@ -93,24 +111,21 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/circulars', circularRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/gallery', galleryRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/backup', backupRoutes);
+app.use('/api/subscribers', subscriberRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/feed', feedRoutes);
+app.use('/api/tags', tagRoutes);
+app.use('/api/polls', pollRoutes);
+app.use('/api/sitemap.xml', sitemapRoutes);
+app.use('/sitemap.xml', sitemapRoutes);
 
-// 404 Handler for undefined API routes
-app.use('/api', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: `Cannot ${req.method} ${req.originalUrl} - Route not found`,
-  });
-});
+// 404 Handler for undefined routes
+app.use(notFoundHandler);
 
-// Centralized Error Handling Middleware
-app.use((err, req, res, next) => {
-  console.error('[SERVER ERROR]:', err);
-  const statusCode = err.status || err.statusCode || 500;
-  res.status(statusCode).json({
-    success: false,
-    error: err.message || 'Internal Server Error',
-  });
-});
+// Centralized Global Error Handling Middleware
+app.use(globalErrorHandler);
 
 // Export app for test suites
 module.exports = app;

@@ -10,6 +10,20 @@ router.get('/article/:articleId', optionalAuth, commentController.getCommentsByA
 router.post('/', commentController.createComment);
 
 // Protected routes (Super Admin & Editor)
+router.get(
+  '/',
+  verifyToken,
+  requireRole('super_admin', 'editor'),
+  commentController.getAllComments
+);
+
+router.patch(
+  '/:id',
+  verifyToken,
+  requireRole('super_admin', 'editor'),
+  commentController.updateCommentStatus
+);
+
 router.patch(
   '/:id/status',
   verifyToken,

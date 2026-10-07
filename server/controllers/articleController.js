@@ -45,14 +45,20 @@ async function getAllArticles(req, res, next) {
   try {
     const {
       category_id,
+      category,
       department_id,
+      department,
       status,
       search,
       featured,
       breaking,
+      tag,
       page = 1,
       limit = 10,
     } = req.query;
+
+    const catParam = category_id || category;
+    const deptParam = department_id || department;
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
@@ -74,15 +80,25 @@ async function getAllArticles(req, res, next) {
     }
 
     // Category filter
-    if (category_id) {
-      whereClauses.push('(a.category_id = ? OR c.slug = ?)');
-      queryParams.push(category_id, category_id);
+    if (catParam) {
+      whereClauses.push('(a.category_id = ? OR c.slug = ? OR c.name = ?)');
+      queryParams.push(catParam, catParam, catParam);
     }
 
     // Department filter
-    if (department_id) {
-      whereClauses.push('(a.department_id = ? OR d.code = ?)');
-      queryParams.push(department_id, department_id);
+    if (deptParam) {
+      whereClauses.push('(a.department_id = ? OR d.code = ? OR d.name = ?)');
+      queryParams.push(deptParam, deptParam, deptParam);
+    }
+
+    // Tag filter
+    if (tag) {
+      whereClauses.push(`a.id IN (
+        SELECT at.article_id FROM article_tags at 
+        JOIN tags t ON at.tag_id = t.id 
+        WHERE t.slug = ? OR t.name = ?
+      )`);
+      queryParams.push(tag, tag);
     }
 
     // Featured / Breaking filters
@@ -247,6 +263,20 @@ async function getArticleBySlugOrId(req, res, next) {
     if (article.status === 'published') {
       await pool.query('UPDATE articles SET views_count = views_count + 1 WHERE id = ?', [article.id]);
       article.views_count += 1;
+    }
+
+    // Attach taxonomy tags if any
+    try {
+      const [tagRows] = await pool.query(
+        `SELECT t.id, t.name, t.slug 
+         FROM tags t 
+         JOIN article_tags at ON t.id = at.tag_id 
+         WHERE at.article_id = ?`,
+        [article.id]
+      );
+      article.tags = tagRows || [];
+    } catch {
+      article.tags = [];
     }
 
     return res.status(200).json({
@@ -441,6 +471,25 @@ async function updateArticle(req, res, next) {
     const updatedFeatured = is_featured !== undefined ? (is_featured ? 1 : 0) : currentArticle.is_featured;
     const updatedBreaking = is_breaking !== undefined ? (is_breaking ? 1 : 0) : currentArticle.is_breaking;
 
+    // Automatic revision snapshot before applying updates (Task 83)
+    try {
+      const changeSummary = req.body.change_summary || (title && title.trim() !== currentArticle.title ? `Updated title to "${title.trim().slice(0, 50)}"` : 'Editorial revision snapshot');
+      await pool.query(
+        `INSERT INTO article_revisions (article_id, editor_id, title, content, excerpt, change_summary)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          currentArticle.id,
+          req.user ? req.user.id : null,
+          currentArticle.title,
+          currentArticle.content,
+          currentArticle.summary,
+          changeSummary,
+        ]
+      );
+    } catch (revErr) {
+      console.warn('Failed to snapshot article revision:', revErr.message);
+    }
+
     await pool.query(
       `UPDATE articles SET
         title = ?, slug = ?, summary = ?, content = ?, cover_image = ?,
@@ -486,6 +535,48 @@ async function updateArticle(req, res, next) {
 }
 
 /**
+ * Retrieve revision history for an article ordered by created_at DESC with editor name.
+ * Protected: super_admin, editor only.
+ */
+async function getArticleRevisions(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const [articleRows] = await pool.query('SELECT id, title FROM articles WHERE id = ? LIMIT 1', [id]);
+    if (articleRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    const [revisions] = await pool.query(
+      `SELECT 
+         r.id,
+         r.article_id,
+         r.editor_id,
+         u.name AS editor_name,
+         u.email AS editor_email,
+         r.title,
+         r.content,
+         r.excerpt,
+         r.change_summary,
+         r.created_at
+       FROM article_revisions r
+       LEFT JOIN users u ON r.editor_id = u.id
+       WHERE r.article_id = ?
+       ORDER BY r.created_at DESC`,
+      [id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: revisions.length,
+      data: revisions,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * Delete an article.
  * Protected: super_admin, editor only.
  */
@@ -516,5 +607,6 @@ module.exports = {
   getArticleBySlugOrId,
   createArticle,
   updateArticle,
+  getArticleRevisions,
   deleteArticle,
 };

@@ -9,22 +9,25 @@ function uploadSingle(req, res) {
     });
   }
 
-  const fileData = {
-    filename: req.file.filename,
-    url: `/uploads/${req.file.filename}`,
-    size: req.file.size,
-    mimetype: req.file.mimetype,
-  };
+  const filename = req.file.filename;
+  const url = `/uploads/${filename}`;
 
   return res.status(201).json({
     success: true,
     message: 'File uploaded successfully',
-    data: fileData,
+    url,
+    filename,
+    data: {
+      filename,
+      url,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+    },
   });
 }
 
 /**
- * Handle multiple images upload (up to 10 images).
+ * Handle multiple images upload (up to 5 images).
  */
 function uploadMultiple(req, res) {
   if (!req.files || req.files.length === 0) {
@@ -34,6 +37,7 @@ function uploadMultiple(req, res) {
     });
   }
 
+  const urls = req.files.map((file) => `/uploads/${file.filename}`);
   const filesData = req.files.map((file) => ({
     filename: file.filename,
     url: `/uploads/${file.filename}`,
@@ -45,6 +49,7 @@ function uploadMultiple(req, res) {
     success: true,
     count: filesData.length,
     message: `${filesData.length} file(s) uploaded successfully`,
+    urls,
     data: filesData,
   });
 }

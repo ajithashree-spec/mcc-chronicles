@@ -100,7 +100,7 @@ async function initDatabase() {
         author_email VARCHAR(191) NOT NULL,
         content TEXT NOT NULL,
         is_approved BOOLEAN DEFAULT TRUE,
-        status ENUM('pending', 'approved', 'spam') DEFAULT 'approved',
+        status ENUM('pending', 'approved', 'rejected', 'spam') DEFAULT 'approved',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -149,6 +149,114 @@ async function initDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
         FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 9. Activity Logs Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL,
+        action VARCHAR(100) NOT NULL,
+        entity_type VARCHAR(50) NULL,
+        entity_id INT NULL,
+        details TEXT NULL,
+        ip_address VARCHAR(45) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 10. Subscribers Table (Newsletter)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS subscribers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        name VARCHAR(150) NULL,
+        frequency ENUM('daily', 'weekly', 'monthly') DEFAULT 'weekly',
+        is_active BOOLEAN DEFAULT TRUE,
+        unsubscribe_token VARCHAR(64) NOT NULL,
+        subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        unsubscribed_at TIMESTAMP NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 11. Contact Messages Table (Reader Inquiries & Feedback)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS contact_messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(150) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        category ENUM('editorial_tip', 'general_inquiry', 'correction', 'grievance', 'event_coverage') DEFAULT 'general_inquiry',
+        message TEXT NOT NULL,
+        status ENUM('unread', 'read', 'in_progress', 'resolved', 'archived') DEFAULT 'unread',
+        admin_notes TEXT NULL,
+        ip_address VARCHAR(45) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 12. Tags Taxonomy Table (Task 82)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS tags (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        slug VARCHAR(60) NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 13. Article Tags Junction Table (Task 82)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS article_tags (
+        article_id INT NOT NULL,
+        tag_id INT NOT NULL,
+        PRIMARY KEY (article_id, tag_id),
+        FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
+        FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 14. Article Revisions Table (Task 83)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS article_revisions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        article_id INT NOT NULL,
+        editor_id INT NULL,
+        title VARCHAR(255) NOT NULL,
+        content LONGTEXT NOT NULL,
+        excerpt TEXT NULL,
+        change_summary VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
+        FOREIGN KEY (editor_id) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 15. Campus Polls Table (Task 84)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS polls (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        question VARCHAR(255) NOT NULL,
+        options JSON NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 16. Poll Votes Table (Task 84)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS poll_votes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        poll_id INT NOT NULL,
+        option_index INT NOT NULL,
+        ip_hash VARCHAR(64) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY (poll_id, ip_hash),
+        FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 

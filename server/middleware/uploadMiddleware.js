@@ -15,21 +15,21 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const randomHex = crypto.randomBytes(8).toString('hex');
     const timestamp = Date.now();
+    const randomHex = crypto.randomBytes(8).toString('hex');
     const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${randomHex}-${timestamp}${ext}`);
+    cb(null, `mcc-${timestamp}-${randomHex}${ext}`);
   },
 });
 
-// Whitelist web image MIME types
-const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+// Whitelist strictly image/jpeg, image/png, image/webp
+const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
 
 const fileFilter = (req, file, cb) => {
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    const error = new Error('Only JPEG, PNG, WEBP, and GIF image files are allowed.');
+    const error = new Error('Only JPEG, PNG, and WEBP image files are allowed.');
     error.status = 400;
     cb(error, false);
   }
@@ -40,7 +40,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB
+    fileSize: 5 * 1024 * 1024, // 5 MB per image
   },
 });
 
