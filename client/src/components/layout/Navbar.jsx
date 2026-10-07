@@ -13,8 +13,11 @@ import {
   Calendar,
   ExternalLink,
   ChevronRight,
+  Bookmark,
 } from 'lucide-react';
 import SearchModal from '../search/SearchModal';
+import ReadingListDrawer from '../common/ReadingListDrawer';
+import { useReadingList } from '../../hooks/useReadingList';
 
 const NAV_ITEMS = [
   { name: 'Home', path: '/' },
@@ -23,6 +26,7 @@ const NAV_ITEMS = [
   { name: 'DeepWoods & Cultural', path: '/category/deepwoods-cultural' },
   { name: 'Sports', path: '/category/sports' },
   { name: 'Research', path: '/category/research' },
+  { name: 'Departments', path: '/departments' },
   { name: 'Galleries', path: '/gallery' },
   { name: 'Circulars', path: '/circulars' },
 ];
@@ -30,6 +34,8 @@ const NAV_ITEMS = [
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [readingListOpen, setReadingListOpen] = useState(false);
+  const { count: readingListCount } = useReadingList();
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
@@ -259,8 +265,24 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Search Trigger Button */}
+          {/* Action Buttons: Reading List & Search */}
           <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => setReadingListOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase font-semibold text-gray-700 hover:text-mcc-maroon hover:bg-mcc-halfwhite border border-mcc-maroon/20 rounded transition-colors relative"
+              aria-label="View Reading List"
+              title="My Broadsheet Reading List"
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${readingListCount > 0 ? 'text-mcc-maroon fill-mcc-gold' : 'text-mcc-gold'}`} />
+              <span className="hidden sm:inline">Reading List</span>
+              {readingListCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-sans font-bold leading-none text-white bg-mcc-maroon rounded-full">
+                  {readingListCount}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setSearchOpen(!searchOpen)}
@@ -275,6 +297,9 @@ export default function Navbar() {
 
         {/* GLOBAL SEARCH MODAL */}
         <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+
+        {/* READING LIST SLIDE-OVER DRAWER */}
+        <ReadingListDrawer isOpen={readingListOpen} onClose={() => setReadingListOpen(false)} />
 
         {/* MOBILE NAVIGATION DRAWER */}
         {mobileMenuOpen && (
@@ -303,6 +328,23 @@ export default function Navbar() {
               </NavLink>
             ))}
             <div className="pt-4 border-t border-mcc-maroon/15 mt-3 space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setReadingListOpen(true);
+                }}
+                className="flex items-center justify-between w-full px-3 py-2 text-sm font-serif font-semibold text-gray-800 hover:bg-mcc-halfwhite hover:text-mcc-maroon rounded-md border border-mcc-maroon/20"
+              >
+                <div className="flex items-center gap-2">
+                  <Bookmark className="w-4 h-4 text-mcc-gold" />
+                  <span>My Reading List</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-mcc-maroon text-white text-xs font-sans">
+                  {readingListCount}
+                </span>
+              </button>
+
               {isAuthenticated() ? (
                 <Link
                   to="/dashboard"

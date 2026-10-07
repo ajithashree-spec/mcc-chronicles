@@ -4,6 +4,7 @@ import articleService from '../../services/articleService';
 import { useAuth } from '../../context/AuthContext';
 import ArticleEditorModal from './ArticleEditorModal';
 import RevisionHistoryModal from './RevisionHistoryModal';
+import ArticleKanban from './ArticleKanban';
 import {
   Search,
   Filter,
@@ -23,11 +24,16 @@ import {
   ToggleLeft,
   ToggleRight,
   History,
+  LayoutList,
+  Columns,
 } from 'lucide-react';
 
 export default function ArticleManager({ onComposeArticle }) {
   const { user } = useAuth();
   const isEditorial = ['super_admin', 'editor'].includes(user?.role);
+
+  // View Mode: 'table' | 'kanban' (Task 96)
+  const [viewMode, setViewMode] = useState('table');
 
   // Filter & Search states
   const [statusFilter, setStatusFilter] = useState('all');
@@ -176,7 +182,7 @@ export default function ArticleManager({ onComposeArticle }) {
   // Total pages
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 
-  // Status Badge styling
+  // Status Badge styling (Task 94)
   const renderStatusBadge = (status) => {
     switch (status) {
       case 'published':
@@ -186,26 +192,41 @@ export default function ArticleManager({ onComposeArticle }) {
             <span>Published</span>
           </span>
         );
-      case 'under_review':
-      case 'pending_review':
+      case 'scheduled':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-serif font-bold uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-300">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+            <span>Scheduled</span>
+          </span>
+        );
+      case 'in_review':
+      case 'under_review':
+      case 'pending_review':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-serif font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
             <span>Under Review</span>
+          </span>
+        );
+      case 'pitch':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-serif font-bold uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+            <span>Pitch</span>
           </span>
         );
       case 'draft':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-serif font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-serif font-bold uppercase tracking-wider bg-gray-100 text-gray-800 border border-gray-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
             <span>Draft</span>
           </span>
         );
       case 'archived':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-serif font-bold uppercase tracking-wider bg-gray-100 text-gray-700 border border-gray-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-serif font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
             <span>Archived</span>
           </span>
         );
@@ -230,14 +251,46 @@ export default function ArticleManager({ onComposeArticle }) {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleCreateNew}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-mcc-maroon hover:bg-mcc-maroon-dark text-white text-xs font-serif uppercase tracking-wider font-bold rounded shadow-sm transition-colors"
-        >
-          <PlusCircle className="w-4 h-4 text-mcc-gold" />
-          <span>Compose New Dispatch</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {/* View Toggle: Table View vs Kanban Pipeline View (Task 96) */}
+          <div className="inline-flex rounded-md border border-gray-300 p-0.5 bg-gray-50 text-xs font-serif">
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors font-bold ${
+                viewMode === 'table'
+                  ? 'bg-mcc-maroon text-white shadow-2xs'
+                  : 'text-gray-700 hover:text-mcc-maroon'
+              }`}
+              title="Switch to Table View"
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+              <span>Table View</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('kanban')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors font-bold ${
+                viewMode === 'kanban'
+                  ? 'bg-mcc-maroon text-white shadow-2xs'
+                  : 'text-gray-700 hover:text-mcc-maroon'
+              }`}
+              title="Switch to Kanban Pipeline View"
+            >
+              <Columns className="w-3.5 h-3.5" />
+              <span>Kanban Desk</span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCreateNew}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-mcc-maroon hover:bg-mcc-maroon-dark text-white text-xs font-serif uppercase tracking-wider font-bold rounded shadow-sm transition-colors"
+          >
+            <PlusCircle className="w-4 h-4 text-mcc-gold" />
+            <span>Compose New Dispatch</span>
+          </button>
+        </div>
       </div>
 
       {/* NOTIFICATION TOAST */}
@@ -273,37 +326,47 @@ export default function ArticleManager({ onComposeArticle }) {
         </div>
       )}
 
-      {/* ============================================================== */}
-      {/* 2. SEARCH & FILTER BAR */}
-      {/* ============================================================== */}
-      <div className="bg-white border border-mcc-maroon/20 p-4 rounded-md shadow-xs space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 lg:pb-0 text-xs font-serif font-semibold border-b sm:border-0 border-gray-100">
-            {[
-              { id: 'all', label: 'All Dispatches' },
-              { id: 'published', label: 'Published' },
-              { id: 'draft', label: 'Drafts' },
-              { id: 'under_review', label: 'Under Review' },
-              { id: 'archived', label: 'Archived' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  setStatusFilter(tab.id);
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1.5 rounded transition-colors whitespace-nowrap ${
-                  statusFilter === tab.id
-                    ? 'bg-mcc-maroon text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+      {/* CONDITIONAL VIEW RENDER: KANBAN vs TABLE (Task 96) */}
+      {viewMode === 'kanban' ? (
+        <ArticleKanban
+          onEditArticle={handleEdit}
+          onArticleSaved={handleArticleSaved}
+        />
+      ) : (
+        <>
+          {/* ============================================================== */}
+          {/* 2. SEARCH & FILTER BAR */}
+          {/* ============================================================== */}
+          <div className="bg-white border border-mcc-maroon/20 p-4 rounded-md shadow-xs space-y-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              {/* Status Tabs */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 lg:pb-0 text-xs font-serif font-semibold border-b sm:border-0 border-gray-100">
+                {[
+                  { id: 'all', label: 'All Dispatches' },
+                  { id: 'pitch', label: 'Pitches' },
+                  { id: 'draft', label: 'Drafts' },
+                  { id: 'in_review', label: 'Under Review' },
+                  { id: 'scheduled', label: 'Scheduled' },
+                  { id: 'published', label: 'Published' },
+                  { id: 'archived', label: 'Archived' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter(tab.id);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1.5 rounded transition-colors whitespace-nowrap ${
+                      statusFilter === tab.id
+                        ? 'bg-mcc-maroon text-white shadow-xs'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
           {/* Search & Category Filter */}
           <form onSubmit={handleSearchSubmit} className="flex flex-wrap sm:flex-nowrap items-center gap-2">
@@ -578,6 +641,8 @@ export default function ArticleManager({ onComposeArticle }) {
           </div>
         </div>
       </div>
+    </>
+  )}
 
       {/* ============================================================== */}
       {/* 5. ARTICLE EDITOR MODAL */}

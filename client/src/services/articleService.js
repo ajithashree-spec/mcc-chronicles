@@ -447,6 +447,138 @@ export const articleService = {
   async getArticleRevisions(articleId) {
     return api.get(`/articles/${encodeURIComponent(articleId)}/revisions`);
   },
+
+  /**
+   * Update authenticated user profile (Task 89).
+   * @param {Object} data - { name, bio, avatar_url }
+   * @returns {Promise<{success: boolean, message: string, data: Object}>}
+   */
+  async updateProfile(data) {
+    return api.put('/users/profile', data);
+  },
+
+  /**
+   * Change authenticated user password (Task 89).
+   * @param {Object} data - { currentPassword, newPassword }
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async changePassword(data) {
+    return api.put('/users/change-password', data);
+  },
+
+  /**
+   * Fetch users list (Super Admin, Task 90).
+   * @param {Object} [params]
+   * @returns {Promise<{success: boolean, count: number, data: Array}>}
+   */
+  async getUsers(params = {}) {
+    return api.get('/users', { params });
+  },
+
+  /**
+   * Create staff user (Super Admin, Task 90).
+   * @param {Object} data
+   * @returns {Promise<{success: boolean, message: string, data: Object}>}
+   */
+  async createUser(data) {
+    return api.post('/users', data);
+  },
+
+  /**
+   * Update user details or role (Super Admin, Task 90).
+   * @param {number|string} id
+   * @param {Object} data
+   * @returns {Promise<{success: boolean, message: string, data: Object}>}
+   */
+  async updateUser(id, data) {
+    return api.put(`/users/${encodeURIComponent(id)}`, data);
+  },
+
+  /**
+   * Delete staff user (Super Admin, Task 90).
+   * @param {number|string} id
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async deleteUser(id) {
+    return api.delete(`/users/${encodeURIComponent(id)}`);
+  },
+
+  /**
+   * Toggle user activation status (Super Admin, Task 90).
+   * @param {number|string} id
+   * @param {boolean} [isActive]
+   * @returns {Promise<{success: boolean, message: string, is_active: number}>}
+   */
+  async toggleUserStatus(id, isActive) {
+    return api.patch(`/users/${encodeURIComponent(id)}/status`, { is_active: isActive });
+  },
+
+  /**
+   * Quick status transition on an article (Tasks 94 & 96).
+   * @param {number|string} articleId
+   * @param {string} status - 'pitch'|'draft'|'in_review'|'scheduled'|'published'|'archived'
+   * @param {string|null} [scheduled_at] - ISO string or datetime
+   * @returns {Promise<{success: boolean, message: string, data: Object}>}
+   */
+  async updateArticleStatus(articleId, status, scheduled_at = null) {
+    return api.patch(`/articles/${encodeURIComponent(articleId)}/status`, {
+      status,
+      scheduled_at,
+    });
+  },
+
+  /**
+   * Trigger immediate scheduled article processing (Super Admin, Task 95).
+   * @returns {Promise<{success: boolean, message: string, publishedCount: number}>}
+   */
+  async processScheduledArticles() {
+    return api.post('/articles/process-scheduled');
+  },
+
+  /**
+   * Fetch authenticated user's cloud bookmarks (Task 97).
+   * @returns {Promise<{success: boolean, count: number, data: Array}>}
+   */
+  async getUserBookmarks() {
+    return api.get('/bookmarks');
+  },
+
+  /**
+   * Toggle article bookmark status in cloud (Task 97).
+   * @param {number|string} articleId
+   * @returns {Promise<{success: boolean, bookmarked: boolean, message: string}>}
+   */
+  async toggleCloudBookmark(articleId) {
+    return api.post('/bookmarks/toggle', { articleId });
+  },
+
+  /**
+   * Fetch editorial desk assignments (Task 98).
+   * @param {Object} [params] - { status, assigned_to }
+   * @returns {Promise<{success: boolean, count: number, data: Array}>}
+   */
+  async getAssignments(params = {}) {
+    return api.get('/assignments', { params });
+  },
+
+  /**
+   * Create an editorial desk assignment / pitch brief (Task 98).
+   * @param {Object} data - { title, brief, assigned_to, department_id, deadline }
+   * @returns {Promise<{success: boolean, message: string, data: Object}>}
+   */
+  async createAssignment(data) {
+    return api.post('/assignments', data);
+  },
+
+  /**
+   * Update editorial assignment status (Task 98).
+   * @param {number|string} id
+   * @param {string} status - 'assigned'|'accepted'|'submitted'|'completed'|'cancelled'
+   * @returns {Promise<{success: boolean, message: string, data: Object}>}
+   */
+  async updateAssignmentStatus(id, status) {
+    return api.patch(`/assignments/${encodeURIComponent(id)}/status`, { status });
+  },
 };
 
 export default articleService;

@@ -20,11 +20,14 @@ import {
   Sparkles,
   ChevronRight,
   BookOpen,
+  Users,
 } from 'lucide-react';
+import UserProfileModal from './UserProfileModal';
 
 export default function AdminLayout({ activeTab, onTabChange, children, badgeCounts = {} }) {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const roleBadges = {
     super_admin: { label: 'Super Admin', color: 'bg-red-900 text-red-100 border-red-800' },
@@ -92,6 +95,13 @@ export default function AdminLayout({ activeTab, onTabChange, children, badgeCou
             label: 'Data Backups',
             desc: 'Snapshots & Archival Exports',
             icon: Database,
+            badge: null,
+          },
+          {
+            id: 'users',
+            label: 'Staff & Roles',
+            desc: 'User Governance Console',
+            icon: Users,
             badge: null,
           },
           {
@@ -230,13 +240,26 @@ export default function AdminLayout({ activeTab, onTabChange, children, badgeCou
 
         {/* 3. USER PROFILE & LOGOUT SECTION */}
         <div className="p-4 border-t border-white/10 bg-black/30">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-mcc-maroon border border-mcc-gold flex items-center justify-center text-mcc-gold font-serif font-black text-sm flex-shrink-0">
-              {user?.name ? user.name[0].toUpperCase() : 'M'}
+          <div
+            onClick={() => setIsProfileModalOpen(true)}
+            className="flex items-center gap-3 mb-3 p-1 -mx-1 rounded hover:bg-white/5 cursor-pointer transition-colors group"
+            title="Click to view staff dossier & security settings"
+          >
+            <div className="w-10 h-10 rounded-full bg-mcc-maroon border border-mcc-gold flex items-center justify-center text-mcc-gold font-serif font-black text-sm flex-shrink-0 overflow-hidden">
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : user?.name ? (
+                user.name[0].toUpperCase()
+              ) : (
+                'M'
+              )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-serif font-bold text-xs text-white truncate">
-                {user?.name || 'Editorial Officer'}
+              <div className="font-serif font-bold text-xs text-white truncate group-hover:text-mcc-gold transition-colors flex items-center justify-between">
+                <span>{user?.name || 'Editorial Officer'}</span>
+                <span className="text-[10px] text-gray-400 font-sans font-normal opacity-0 group-hover:opacity-100 transition-opacity">
+                  Edit &rarr;
+                </span>
               </div>
               <div className="text-[11px] text-gray-400 truncate">
                 {user?.email}
@@ -333,6 +356,12 @@ export default function AdminLayout({ activeTab, onTabChange, children, badgeCou
           The MCC Chronicles Editorial Suite &bull; Madras Christian College, Tambaram &bull; Autonomous Press Engine
         </footer>
       </div>
+
+      {/* USER DOSSIER & SECURITY MODAL (Task 89) */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </div>
   );
 }

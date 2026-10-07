@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isTokenValid } from './src/services/api.js';
+import { calculateReadingTime } from './src/utils/readingTime.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -413,8 +414,192 @@ async function runClientSmokeTests() {
 
     console.log('[PASS] All Tasks 85, 86, 87 & 88 components, routes & dropzone integrations verified.\n');
 
+    // 10. Verify Tasks 89, 90, 91 & 92 (User Profiles, User Manager, Department Directory & Reading List Drawer)
+    console.log('[TEST 10] Verifying Tasks 89, 90, 91 & 92 components, pages, hooks & routes...');
+    const task89To92Files = [
+      'src/components/admin/UserProfileModal.jsx',
+      'src/components/admin/UserManager.jsx',
+      'src/pages/DepartmentDirectory.jsx',
+      'src/hooks/useReadingList.js',
+      'src/components/common/ReadingListDrawer.jsx',
+    ];
+
+    for (const relFile of task89To92Files) {
+      const fullPath = path.resolve(__dirname, relFile);
+      if (!fs.existsSync(fullPath)) {
+        throw new Error(`Required file missing: ${relFile}`);
+      }
+      console.log(`  ✓ Found: ${relFile}`);
+    }
+
+    // Verify Task 89: UserProfileModal wired in AdminLayout.jsx
+    const adminLayoutContent = fs.readFileSync(path.resolve(__dirname, 'src/components/admin/AdminLayout.jsx'), 'utf-8');
+    if (!adminLayoutContent.includes('UserProfileModal') || !adminLayoutContent.includes('isProfileModalOpen')) {
+      throw new Error('UserProfileModal is not integrated into AdminLayout.jsx');
+    }
+    console.log('  ✓ Verified UserProfileModal integration into AdminLayout.jsx');
+
+    // Verify Task 90: UserManager wired in Dashboard.jsx and AdminLayout navItems
+    const dashboardContent = fs.readFileSync(path.resolve(__dirname, 'src/pages/Dashboard.jsx'), 'utf-8');
+    if (!dashboardContent.includes('UserManager') || !dashboardContent.includes("activeTab === 'users'")) {
+      throw new Error('UserManager is not mounted in Dashboard.jsx');
+    }
+    if (!adminLayoutContent.includes("id: 'users'") || !adminLayoutContent.includes('Staff & Roles')) {
+      throw new Error('AdminLayout.jsx navItems is missing users tab for Super Admin');
+    }
+    console.log('  ✓ Verified UserManager mounted in Dashboard.jsx and AdminLayout.jsx');
+
+    // Verify Task 91: DepartmentDirectory registered in App.jsx and linked in Navbar.jsx / Footer.jsx
+    if (!appSource.includes('/departments') || !appSource.includes('DepartmentDirectory')) {
+      throw new Error('src/App.jsx does not register /departments route');
+    }
+    const navbarSource = fs.readFileSync(path.resolve(__dirname, 'src/components/layout/Navbar.jsx'), 'utf-8');
+    if (!navbarSource.includes('/departments')) {
+      throw new Error('Navbar.jsx does not link to /departments');
+    }
+    const footerSource = fs.readFileSync(path.resolve(__dirname, 'src/components/layout/Footer.jsx'), 'utf-8');
+    if (!footerSource.includes('/departments')) {
+      throw new Error('Footer.jsx does not link to /departments');
+    }
+    console.log('  ✓ Verified /departments route in App.jsx and links in Navbar.jsx and Footer.jsx');
+
+    // Verify Task 92: Reading List drawer in Navbar and Bookmark toggle in ArticleShareBar
+    if (!navbarSource.includes('ReadingListDrawer') || !navbarSource.includes('useReadingList')) {
+      throw new Error('Navbar.jsx does not mount ReadingListDrawer or useReadingList hook');
+    }
+    const shareBarSource = fs.readFileSync(path.resolve(__dirname, 'src/components/article/ArticleShareBar.jsx'), 'utf-8');
+    if (!shareBarSource.includes('useReadingList') || !shareBarSource.includes('handleToggleBookmark')) {
+      throw new Error('ArticleShareBar.jsx does not integrate reading list bookmarking');
+    }
+    console.log('  ✓ Verified ReadingListDrawer in Navbar.jsx and Bookmark toggle in ArticleShareBar.jsx');
+
+    // Verify articleService methods for Tasks 89 & 90
+    const requiredTask89To92Methods = [
+      'updateProfile(',
+      'changePassword(',
+      'getUsers(',
+      'createUser(',
+      'updateUser(',
+      'deleteUser(',
+      'toggleUserStatus(',
+    ];
+    for (const method of requiredTask89To92Methods) {
+      if (!serviceSource.includes(method)) {
+        throw new Error(`src/services/articleService.js missing required method: ${method}`);
+      }
+    }
+    console.log('  ✓ Verified updateProfile, changePassword, getUsers, createUser, updateUser, deleteUser, and toggleUserStatus in articleService.js');
+
+    console.log('[PASS] All Tasks 89, 90, 91 & 92 components, pages, hooks & routes verified.\n');
+
+    // 11. Verify Tasks 93, 94, 95 & 96 (Reading Time, Status Transitions, Scheduled Auto-Publisher & Kanban Desk)
+    console.log('[TEST 11] Verifying Tasks 93, 94, 95 & 96 reading time calculator, status transitions & Kanban desk...');
+    const task93To96Files = [
+      'src/utils/readingTime.js',
+      'src/components/admin/ArticleKanban.jsx',
+    ];
+
+    for (const relFile of task93To96Files) {
+      const fullPath = path.resolve(__dirname, relFile);
+      if (!fs.existsSync(fullPath)) {
+        throw new Error(`Required file missing: ${relFile}`);
+      }
+      console.log(`  ✓ Found: ${relFile}`);
+    }
+
+    // Verify Task 93: readingTime calculator logic
+    const sampleArticleText = `
+      # The Historic Anderson Quadrangle
+      Founded in 1837, Madras Christian College has fostered generations of scholars and statesmen.
+      This dispatch contains forty words of high quality broadsheet narrative text to rigorously test the dynamic calculator.
+    `;
+    const computedStats = calculateReadingTime(sampleArticleText);
+    if (!computedStats || typeof computedStats.words !== 'number' || !computedStats.text.includes('min read')) {
+      throw new Error('calculateReadingTime utility did not produce valid reading metrics');
+    }
+    console.log(`  ✓ Verified calculateReadingTime utility (${computedStats.words} words, ${computedStats.text})`);
+
+    // Verify Task 93: reading time integration in ArticleEditorModal.jsx and ArticleDetail.jsx
+    const editorModalSource = fs.readFileSync(path.resolve(__dirname, 'src/components/admin/ArticleEditorModal.jsx'), 'utf-8');
+    if (!editorModalSource.includes('calculateReadingTime') || !editorModalSource.includes('scheduled_at')) {
+      throw new Error('ArticleEditorModal.jsx missing calculateReadingTime or scheduled_at integration');
+    }
+    const articleDetailContent = fs.readFileSync(path.resolve(__dirname, 'src/pages/ArticleDetail.jsx'), 'utf-8');
+    if (!articleDetailContent.includes('calculateReadingTime')) {
+      throw new Error('ArticleDetail.jsx missing calculateReadingTime integration');
+    }
+    console.log('  ✓ Verified calculateReadingTime integrated in ArticleEditorModal.jsx and ArticleDetail.jsx');
+
+    // Verify Task 96: ArticleKanban integrated in ArticleManager.jsx
+    const articleManagerContent = fs.readFileSync(path.resolve(__dirname, 'src/components/admin/ArticleManager.jsx'), 'utf-8');
+    if (!articleManagerContent.includes('ArticleKanban') || !articleManagerContent.includes('viewMode') || !articleManagerContent.includes('Kanban Desk')) {
+      throw new Error('ArticleManager.jsx missing ArticleKanban view toggle integration');
+    }
+    console.log('  ✓ Verified ArticleKanban and View Toggle in ArticleManager.jsx');
+
+    // Verify Task 96: articleService methods for status updates and auto-publisher
+    if (!serviceSource.includes('updateArticleStatus(') || !serviceSource.includes('processScheduledArticles(')) {
+      throw new Error('articleService.js missing updateArticleStatus or processScheduledArticles');
+    }
+    console.log('  ✓ Verified updateArticleStatus() and processScheduledArticles() in articleService.js');
+
+    console.log('[PASS] All Tasks 93, 94, 95 & 96 components, reading calculator & Kanban desk verified.\n');
+
+    // 12. Verify Tasks 97, 98, 99 & 100: Cloud Sync, Pitch Pipeline & Multi-Author Bylines
+    console.log('[TEST 12] Verifying Tasks 97, 98, 99 & 100 (Cloud Sync, Pitch Assignments, Bylines & Milestone 100)...');
+    
+    const task97To100Files = [
+      'src/hooks/useReadingList.js',
+      'src/components/admin/ArticleKanban.jsx',
+      'src/components/article/BylineBox.jsx',
+      'src/pages/ArticleDetail.jsx',
+      'src/services/articleService.js',
+    ];
+
+    for (const relFile of task97To100Files) {
+      const fullPath = path.resolve(__dirname, relFile);
+      if (!fs.existsSync(fullPath)) {
+        throw new Error(`Required file missing: ${relFile}`);
+      }
+      console.log(`  ✓ Found: ${relFile}`);
+    }
+
+    // Verify Task 97: useReadingList cloud sync integration
+    const readingListHookSource = fs.readFileSync(path.resolve(__dirname, 'src/hooks/useReadingList.js'), 'utf-8');
+    if (!readingListHookSource.includes('getUserBookmarks') || !readingListHookSource.includes('toggleCloudBookmark') || !readingListHookSource.includes('mcc_reading_list')) {
+      throw new Error('useReadingList.js missing cloud sync or localStorage fallback');
+    }
+    console.log('  ✓ Verified useReadingList.js cloud sync and guest fallback');
+
+    // Verify Task 98: ArticleKanban pitch & assignment drawer/modal
+    const kanbanSource = fs.readFileSync(path.resolve(__dirname, 'src/components/admin/ArticleKanban.jsx'), 'utf-8');
+    if (!kanbanSource.includes('Pitch / Assign Story') || !kanbanSource.includes('createAssignment') || !kanbanSource.includes('showAssignmentModal')) {
+      throw new Error('ArticleKanban.jsx missing Pitch / Assign Story drawer/modal integration');
+    }
+    console.log('  ✓ Verified ArticleKanban.jsx pitch assignment modal & workflow');
+
+    // Verify Task 99: BylineBox and ArticleDetail integration
+    const bylineBoxSource = fs.readFileSync(path.resolve(__dirname, 'src/components/article/BylineBox.jsx'), 'utf-8');
+    if (!bylineBoxSource.includes('role_in_article') || !bylineBoxSource.includes('bylineCreditsString')) {
+      throw new Error('BylineBox.jsx missing role credits or contributor attribution logic');
+    }
+    const articleDetailFile = fs.readFileSync(path.resolve(__dirname, 'src/pages/ArticleDetail.jsx'), 'utf-8');
+    if (!articleDetailFile.includes('BylineBox') || !articleDetailFile.includes('article.authors')) {
+      throw new Error('ArticleDetail.jsx missing BylineBox component integration');
+    }
+    console.log('  ✓ Verified BylineBox component and ArticleDetail.jsx multi-author attribution');
+
+    // Verify Task 97 & 98: articleService methods
+    const updatedService = fs.readFileSync(path.resolve(__dirname, 'src/services/articleService.js'), 'utf-8');
+    if (!updatedService.includes('getUserBookmarks') || !updatedService.includes('toggleCloudBookmark') || !updatedService.includes('getAssignments') || !updatedService.includes('createAssignment')) {
+      throw new Error('articleService.js missing Task 97 or 98 service methods');
+    }
+    console.log('  ✓ Verified articleService bookmark and assignment API methods');
+
+    console.log('[PASS] All Tasks 97, 98, 99 & 100 components, hooks, and services verified successfully.\n');
+
     console.log('========================================================================');
-    console.log('=== ALL CLIENT TESTS PASSED (TASKS 49 THROUGH 88/140 - VERIFIED)     ===');
+    console.log('=== ALL CLIENT TESTS PASSED (TASKS 49 THROUGH 100/140 - VERIFIED)    ===');
     console.log('========================================================================');
   } catch (err) {
     console.error('[SMOKE TEST FAILURE]:', err.message);

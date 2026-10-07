@@ -96,6 +96,8 @@ const feedRoutes = require('./routes/feedRoutes');
 const sitemapRoutes = require('./routes/sitemapRoutes');
 const tagRoutes = require('./routes/tagRoutes');
 const pollRoutes = require('./routes/pollRoutes');
+const bookmarkRoutes = require('./routes/bookmarkRoutes');
+const assignmentRoutes = require('./routes/assignmentRoutes');
 
 const { notFoundHandler, globalErrorHandler } = require('./middleware/errorMiddleware');
 
@@ -118,6 +120,8 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/feed', feedRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/polls', pollRoutes);
+app.use('/api/bookmarks', bookmarkRoutes);
+app.use('/api/assignments', assignmentRoutes);
 app.use('/api/sitemap.xml', sitemapRoutes);
 app.use('/sitemap.xml', sitemapRoutes);
 
@@ -126,6 +130,10 @@ app.use(notFoundHandler);
 
 // Centralized Global Error Handling Middleware
 app.use(globalErrorHandler);
+
+// Initialize background cron scheduler engine (Task 95)
+const { initCronScheduler } = require('./services/cronScheduler');
+initCronScheduler();
 
 // Export app for test suites
 module.exports = app;

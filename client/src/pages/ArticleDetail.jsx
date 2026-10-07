@@ -19,6 +19,8 @@ import ReadingProgressBar from '../components/article/ReadingProgressBar';
 import ArticleShareBar from '../components/article/ArticleShareBar';
 import CommentSection from '../components/article/CommentSection';
 import PollWidget from '../components/common/PollWidget';
+import BylineBox from '../components/article/BylineBox';
+import { calculateReadingTime } from '../utils/readingTime';
 
 /**
  * Normalizes cover image URLs to support both external and local server uploads.
@@ -55,13 +57,12 @@ function formatDate(dateStr) {
 }
 
 /**
- * Calculate approximate reading time in minutes.
+ * Calculate approximate reading time in minutes dynamically.
  */
-function getReadingTime(content, summary) {
-  const text = (content || summary || '');
-  const wordCount = text.trim().split(/\s+/).length;
-  const minutes = Math.max(1, Math.ceil(wordCount / 200));
-  return `${minutes} min read`;
+function getReadingTime(content, summary, explicitTime) {
+  if (explicitTime) return explicitTime;
+  const computed = calculateReadingTime(content || summary || '');
+  return computed.text;
 }
 
 // Fallback articles if current article or related search is offline
@@ -212,7 +213,7 @@ export default function ArticleDetail() {
   const authorName = article.author_name || article.author || 'MCC Editorial Board';
   const departmentName = article.department_name || article.department || null;
   const publishedDate = formatDate(article.published_at || article.created_at);
-  const readingTime = getReadingTime(article.content, article.summary);
+  const readingTime = getReadingTime(article.content, article.summary, article.reading_time);
   const coverImage = getMediaUrl(article.cover_image);
   const viewsCount = article.views_count || 1;
 
@@ -309,7 +310,7 @@ export default function ArticleDetail() {
                 {(authorName || 'M')[0].toUpperCase()}
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="font-serif font-bold text-mcc-navy text-sm sm:text-base">
                     {authorName}
                   </span>
@@ -319,9 +320,15 @@ export default function ArticleDetail() {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 font-sans mt-0.5">
-                  Published in the Tambaram Broadsheet Gazette
-                </p>
+                {article.authors && article.authors.length > 1 ? (
+                  <p className="text-xs text-mcc-maroon font-serif italic mt-0.5">
+                    {article.authors.map((a) => `${a.role_in_article || 'Contributor'}: ${a.name}`).join(' • ')}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500 font-sans mt-0.5">
+                    Published in the Tambaram Broadsheet Gazette
+                  </p>
+                )}
               </div>
             </div>
 
@@ -334,7 +341,7 @@ export default function ArticleDetail() {
           </div>
 
           {/* 8. ARTICLE SHARE BAR */}
-          <ArticleShareBar title={article.title} />
+          <ArticleShareBar title={article.title} article={article} />
         </div>
 
         {/* 9. FEATURED IMAGE WITH BROADSHEET CAPTION */}
@@ -398,32 +405,16 @@ export default function ArticleDetail() {
           ))}
         </div>
 
-        {/* 11. ABOUT THE AUTHOR CARD */}
-        <div className="no-print mt-12 p-6 bg-white rounded-md border border-mcc-maroon/20 shadow-xs flex flex-col sm:flex-row items-center sm:items-start gap-5">
-          <div className="w-14 h-14 rounded-full bg-mcc-navy text-mcc-gold flex items-center justify-center font-serif font-black text-xl shrink-0 shadow-xs">
-            {(authorName || 'M')[0].toUpperCase()}
-          </div>
-          <div className="space-y-1.5 text-center sm:text-left flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <h4 className="font-serif text-lg font-bold text-mcc-navy">
-                About the Contributor: {authorName}
-              </h4>
-              <span className="text-[11px] font-serif uppercase tracking-wider text-mcc-maroon font-bold bg-mcc-maroon/5 px-2 py-0.5 rounded border border-mcc-maroon/10">
-                Editorial Contributor
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm font-serif text-gray-700 leading-relaxed">
-              {article.author_bio ||
-                `Staff reporter and literary correspondent contributing regularly to The MCC Chronicles. Dedicated to documenting the academic triumphs, collegiate lore, and natural history of the 365-acre scrub jungle campus.`}
-            </p>
-            {departmentName && (
-              <p className="text-xs font-sans text-gray-500 flex items-center justify-center sm:justify-start gap-1 pt-1">
-                <Building className="w-3.5 h-3.5 text-mcc-gold" />
-                <span>Department of {departmentName} • Madras Christian College</span>
-              </p>
-            )}
-          </div>
-        </div>
+        {/* 11. BROADSHEET BYLINE & CONTRIBUTORS ROSTER (Task 99) */}
+        <BylineBox
+          authors={article.authors}
+          defaultAuthor={{
+            name: authorName,
+            bio: article.author_bio,
+            avatar_url: article.author_avatar,
+          }}
+          departmentName={departmentName}
+        />
 
         {/* 12. RELATED STORIES GRID */}
         {relatedArticles.length > 0 && (

@@ -279,6 +279,46 @@ async function getArticleBySlugOrId(req, res, next) {
       article.tags = [];
     }
 
+    // Attach multi-author byline contributors (Task 99)
+    try {
+      const [authorRows] = await pool.query(
+        `SELECT 
+           aa.id, aa.user_id, aa.role_in_article,
+           u.name, u.email, u.avatar_url, u.bio
+         FROM article_authors aa
+         JOIN users u ON aa.user_id = u.id
+         WHERE aa.article_id = ?
+         ORDER BY aa.id ASC`,
+        [article.id]
+      );
+
+      if (authorRows && authorRows.length > 0) {
+        article.authors = authorRows;
+      } else {
+        article.authors = [
+          {
+            user_id: article.author_id,
+            name: article.author_name || 'Staff Reporter',
+            email: article.author_email,
+            avatar_url: article.author_avatar,
+            bio: article.author_bio,
+            role_in_article: 'Lead Reporter',
+          },
+        ];
+      }
+    } catch {
+      article.authors = [
+        {
+          user_id: article.author_id,
+          name: article.author_name || 'Staff Reporter',
+          email: article.author_email,
+          avatar_url: article.author_avatar,
+          bio: article.author_bio,
+          role_in_article: 'Lead Reporter',
+        },
+      ];
+    }
+
     return res.status(200).json({
       success: true,
       data: article,
@@ -306,6 +346,8 @@ async function createArticle(req, res, next) {
       is_featured = false,
       is_breaking = false,
       status: requestedStatus,
+      scheduled_at,
+      contributors,
     } = req.body;
 
     if (!title || !title.trim()) {
@@ -325,23 +367,34 @@ async function createArticle(req, res, next) {
     const finalDept = department_id || req.user.department_id || null;
     const authorId = req.user.id;
 
-    // Workflow permissions for status
-    let finalStatus = 'draft';
+    // Workflow permissions for status (Task 94)
     const isEditorial = ['super_admin', 'editor'].includes(req.user.role);
+    let normalizedRequested = requestedStatus;
+    if (normalizedRequested === 'under_review' || normalizedRequested === 'pending_review') {
+      normalizedRequested = 'in_review';
+    }
 
+    if (!isEditorial && (normalizedRequested === 'published' || normalizedRequested === 'scheduled')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: Reporters cannot directly publish or schedule articles. Submit for editorial review instead.',
+      });
+    }
+
+    let finalStatus = 'draft';
     if (isEditorial) {
-      if (requestedStatus) {
-        finalStatus = requestedStatus === 'pending_review' ? 'under_review' : requestedStatus;
-      } else {
-        finalStatus = 'published';
-      }
+      finalStatus = normalizedRequested || 'published';
     } else {
-      // Reporter role: can save as draft or submit for review
-      if (requestedStatus === 'under_review' || requestedStatus === 'pending_review') {
-        finalStatus = 'under_review';
+      if (['pitch', 'draft', 'in_review'].includes(normalizedRequested)) {
+        finalStatus = normalizedRequested;
       } else {
         finalStatus = 'draft';
       }
+    }
+
+    let finalScheduledAt = null;
+    if (finalStatus === 'scheduled' && scheduled_at) {
+      finalScheduledAt = new Date(scheduled_at);
     }
 
     const publishedAt = finalStatus === 'published' ? new Date() : null;
@@ -350,9 +403,9 @@ async function createArticle(req, res, next) {
     const [result] = await pool.query(
       `INSERT INTO articles (
         title, slug, summary, content, cover_image, status,
-        is_featured, is_breaking, views_count, author_id,
+        scheduled_at, is_featured, is_breaking, views_count, author_id,
         category_id, department_id, published_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
       [
         title.trim(),
         uniqueSlug,
@@ -360,6 +413,7 @@ async function createArticle(req, res, next) {
         content.trim(),
         finalCover,
         finalStatus,
+        finalScheduledAt,
         is_featured ? 1 : 0,
         is_breaking ? 1 : 0,
         authorId,
@@ -369,9 +423,27 @@ async function createArticle(req, res, next) {
       ]
     );
 
+    // Multi-author byline attribution (Task 99)
+    if (Array.isArray(contributors) && contributors.length > 0) {
+      for (const contrib of contributors) {
+        const cUserId = contrib.userId || contrib.user_id;
+        const cRole = contrib.roleInArticle || contrib.role_in_article || 'Co-Author';
+        if (cUserId) {
+          try {
+            await pool.query(
+              'INSERT IGNORE INTO article_authors (article_id, user_id, role_in_article) VALUES (?, ?, ?)',
+              [result.insertId, cUserId, cRole]
+            );
+          } catch (e) {
+            console.warn('Failed to insert contributor:', e.message);
+          }
+        }
+      }
+    }
+
     const [createdRows] = await pool.query(
       `SELECT 
-         a.id, a.title, a.slug, a.summary, a.status, a.is_featured,
+         a.id, a.title, a.slug, a.summary, a.status, a.scheduled_at, a.is_featured,
          a.is_breaking, a.views_count, a.published_at, a.created_at,
          c.name AS category_name, d.name AS department_name
        FROM articles a
@@ -410,6 +482,8 @@ async function updateArticle(req, res, next) {
       is_featured,
       is_breaking,
       status: requestedStatus,
+      scheduled_at,
+      contributors,
     } = req.body;
 
     const [existing] = await pool.query('SELECT * FROM articles WHERE id = ? LIMIT 1', [id]);
@@ -430,7 +504,7 @@ async function updateArticle(req, res, next) {
       });
     }
 
-    // Reporters can only edit drafts or under_review articles
+    // Reporters can only edit drafts, pitches, or in_review articles
     if (!isEditorial && currentArticle.status === 'published') {
       return res.status(403).json({
         success: false,
@@ -438,31 +512,47 @@ async function updateArticle(req, res, next) {
       });
     }
 
-    // Compute updated values
-    let updatedSlug = currentArticle.slug;
-    if (title && title.trim() !== currentArticle.title) {
-      updatedSlug = await generateUniqueSlug(title.trim(), id);
-    }
-
+    // Workflow permissions for status (Task 94)
     let updatedStatus = currentArticle.status;
     let publishedAt = currentArticle.published_at;
+    let updatedScheduledAt = currentArticle.scheduled_at;
 
     if (requestedStatus) {
-      const normalized = requestedStatus === 'pending_review' ? 'under_review' : requestedStatus;
+      let normalized = requestedStatus;
+      if (normalized === 'under_review' || normalized === 'pending_review') {
+        normalized = 'in_review';
+      }
+
+      if (!isEditorial && (normalized === 'published' || normalized === 'scheduled')) {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: Reporters cannot directly publish or schedule articles. Submit for editorial review instead.',
+        });
+      }
+
       if (isEditorial) {
         updatedStatus = normalized;
         if (updatedStatus === 'published' && !publishedAt) {
           publishedAt = new Date();
+        } else if (updatedStatus !== 'published') {
+          publishedAt = null;
         }
       } else {
         // Reporter
-        if (['draft', 'under_review'].includes(normalized)) {
+        if (['pitch', 'draft', 'in_review'].includes(normalized)) {
           updatedStatus = normalized;
         }
       }
     }
 
+    if (scheduled_at !== undefined) {
+      updatedScheduledAt = scheduled_at ? new Date(scheduled_at) : null;
+    }
+
     const updatedTitle = title !== undefined ? title.trim() : currentArticle.title;
+    const updatedSlug = (title && title.trim() !== currentArticle.title)
+      ? await generateUniqueSlug(title.trim(), currentArticle.id)
+      : currentArticle.slug;
     const updatedSummary = summary !== undefined ? (summary ? summary.trim() : null) : (excerpt !== undefined ? (excerpt ? excerpt.trim() : null) : currentArticle.summary);
     const updatedContent = content !== undefined ? content.trim() : currentArticle.content;
     const updatedCover = cover_image !== undefined ? (cover_image ? cover_image.trim() : null) : (featured_image !== undefined ? (featured_image ? featured_image.trim() : null) : currentArticle.cover_image);
@@ -493,7 +583,7 @@ async function updateArticle(req, res, next) {
     await pool.query(
       `UPDATE articles SET
         title = ?, slug = ?, summary = ?, content = ?, cover_image = ?,
-        status = ?, is_featured = ?, is_breaking = ?, category_id = ?,
+        status = ?, scheduled_at = ?, is_featured = ?, is_breaking = ?, category_id = ?,
         department_id = ?, published_at = ?
        WHERE id = ?`,
       [
@@ -503,6 +593,7 @@ async function updateArticle(req, res, next) {
         updatedContent,
         updatedCover,
         updatedStatus,
+        updatedScheduledAt,
         updatedFeatured,
         updatedBreaking,
         updatedCat,
@@ -512,9 +603,28 @@ async function updateArticle(req, res, next) {
       ]
     );
 
+    // Sync multi-author contributors if provided (Task 99)
+    if (Array.isArray(contributors)) {
+      await pool.query('DELETE FROM article_authors WHERE article_id = ?', [id]);
+      for (const contrib of contributors) {
+        const cUserId = contrib.userId || contrib.user_id;
+        const cRole = contrib.roleInArticle || contrib.role_in_article || 'Co-Author';
+        if (cUserId) {
+          try {
+            await pool.query(
+              'INSERT IGNORE INTO article_authors (article_id, user_id, role_in_article) VALUES (?, ?, ?)',
+              [id, cUserId, cRole]
+            );
+          } catch (e) {
+            console.warn('Failed to insert contributor in updateArticle:', e.message);
+          }
+        }
+      }
+    }
+
     const [updatedRows] = await pool.query(
       `SELECT 
-         a.id, a.title, a.slug, a.summary, a.status, a.is_featured,
+         a.id, a.title, a.slug, a.summary, a.status, a.scheduled_at, a.is_featured,
          a.is_breaking, a.views_count, a.published_at, a.updated_at,
          c.name AS category_name, d.name AS department_name
        FROM articles a
@@ -602,11 +712,122 @@ async function deleteArticle(req, res, next) {
   }
 }
 
+/**
+ * Quick status transition (Task 94 & 96).
+ * Protected: verifyToken.
+ */
+async function updateArticleStatus(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { status, scheduled_at } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ success: false, error: 'Status is required' });
+    }
+
+    const [existing] = await pool.query('SELECT * FROM articles WHERE id = ? LIMIT 1', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    const currentArticle = existing[0];
+    const isEditorial = ['super_admin', 'editor'].includes(req.user.role);
+    const isAuthor = req.user.id === currentArticle.author_id;
+
+    if (!isEditorial && !isAuthor) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You do not have permission to transition this article status',
+      });
+    }
+
+    let normalized = status;
+    if (normalized === 'under_review' || normalized === 'pending_review') {
+      normalized = 'in_review';
+    }
+
+    const validStatuses = ['pitch', 'draft', 'in_review', 'scheduled', 'published', 'archived'];
+    if (!validStatuses.includes(normalized)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status '${status}'. Must be one of: ${validStatuses.join(', ')}`,
+      });
+    }
+
+    if (!isEditorial && (normalized === 'published' || normalized === 'scheduled')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: Reporters cannot directly publish or schedule articles. Submit for editorial review instead.',
+      });
+    }
+
+    let publishedAt = currentArticle.published_at;
+    let scheduledAt = currentArticle.scheduled_at;
+
+    if (normalized === 'published') {
+      publishedAt = new Date();
+    } else if (normalized !== 'published') {
+      publishedAt = null;
+    }
+
+    if (normalized === 'scheduled') {
+      scheduledAt = scheduled_at ? new Date(scheduled_at) : (currentArticle.scheduled_at || new Date());
+    } else if (scheduled_at !== undefined) {
+      scheduledAt = scheduled_at ? new Date(scheduled_at) : null;
+    }
+
+    await pool.query(
+      'UPDATE articles SET status = ?, scheduled_at = ?, published_at = ? WHERE id = ?',
+      [normalized, scheduledAt, publishedAt, id]
+    );
+
+    const [updatedRows] = await pool.query(
+      `SELECT 
+         a.id, a.title, a.slug, a.status, a.scheduled_at, a.published_at,
+         a.updated_at, c.name AS category_name, u.name AS author_name
+       FROM articles a
+       LEFT JOIN categories c ON a.category_id = c.id
+       LEFT JOIN users u ON a.author_id = u.id
+       WHERE a.id = ? LIMIT 1`,
+      [id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Article status updated to '${normalized}'`,
+      data: updatedRows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Manually trigger scheduled article auto-publishing (Task 95).
+ * Protected: super_admin only.
+ */
+async function processScheduled(req, res, next) {
+  try {
+    const { processScheduledArticles } = require('../services/cronScheduler');
+    const publishedCount = await processScheduledArticles();
+
+    return res.status(200).json({
+      success: true,
+      message: `Auto-publisher finished: ${publishedCount} dispatches published`,
+      publishedCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getAllArticles,
   getArticleBySlugOrId,
   createArticle,
   updateArticle,
+  updateArticleStatus,
   getArticleRevisions,
   deleteArticle,
+  processScheduled,
 };

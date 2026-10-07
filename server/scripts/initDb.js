@@ -75,7 +75,8 @@ async function initDatabase() {
         summary TEXT DEFAULT NULL,
         content LONGTEXT NOT NULL,
         cover_image VARCHAR(255) DEFAULT NULL,
-        status ENUM('draft', 'under_review', 'published', 'archived') DEFAULT 'draft',
+        status ENUM('pitch', 'draft', 'in_review', 'scheduled', 'published', 'archived') DEFAULT 'draft',
+        scheduled_at TIMESTAMP NULL DEFAULT NULL,
         is_featured BOOLEAN DEFAULT FALSE,
         is_breaking BOOLEAN DEFAULT FALSE,
         views_count INT DEFAULT 0,
@@ -257,6 +258,69 @@ async function initDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY (poll_id, ip_hash),
         FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Migration: Add scheduled_at column and update status ENUM on articles (Task 94)
+    try {
+      await connection.query(`
+        ALTER TABLE articles 
+        ADD COLUMN scheduled_at TIMESTAMP NULL DEFAULT NULL
+      `);
+    } catch (e) {
+      // Column may already exist
+    }
+
+    try {
+      await connection.query(`
+        ALTER TABLE articles 
+        MODIFY COLUMN status ENUM('pitch', 'draft', 'in_review', 'scheduled', 'published', 'archived') NOT NULL DEFAULT 'draft'
+      `);
+    } catch (e) {
+      // Enum already modified
+    }
+
+    // 17. Bookmarks Table (Task 97)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS bookmarks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        article_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY (user_id, article_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 18. Article Assignments Table (Task 98)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS article_assignments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        brief TEXT NOT NULL,
+        assigned_to INT NULL,
+        assigned_by INT NOT NULL,
+        department_id INT NULL,
+        deadline DATE NULL,
+        status ENUM('assigned', 'accepted', 'submitted', 'completed', 'cancelled') DEFAULT 'assigned',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 19. Multi-Author Bylines Table (Task 99)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS article_authors (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        article_id INT NOT NULL,
+        user_id INT NOT NULL,
+        role_in_article VARCHAR(50) DEFAULT 'Co-Author',
+        UNIQUE KEY (article_id, user_id),
+        FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 

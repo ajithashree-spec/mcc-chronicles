@@ -13,6 +13,7 @@ import AuditManager from '../components/admin/AuditManager';
 import AuditLogExplorer from '../components/admin/AuditLogExplorer';
 import BackupConsole from '../components/admin/BackupConsole';
 import SettingsConsole from '../components/admin/SettingsConsole';
+import UserManager from '../components/admin/UserManager';
 import ArticleEditorModal from '../components/admin/ArticleEditorModal';
 
 export default function Dashboard() {
@@ -79,6 +80,9 @@ export default function Dashboard() {
 
       {/* 9. SITE SETTINGS & BRANDING (Super Admin) */}
       {activeTab === 'settings' && user?.role === 'super_admin' && <SettingsConsole />}
+
+      {/* 10. USER & STAFF GOVERNANCE CONSOLE (Super Admin, Task 90) */}
+      {activeTab === 'users' && user?.role === 'super_admin' && <UserManager />}
 
       {/* GLOBAL COMPOSE MODAL (Triggerable from Quick Action Row) */}
       <ArticleEditorModal

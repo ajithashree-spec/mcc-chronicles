@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import articleService from '../../services/articleService';
 import { useAuth } from '../../context/AuthContext';
 import ImageDropzone from '../common/ImageDropzone';
+import { calculateReadingTime } from '../../utils/readingTime';
 import {
   X,
   Save,
@@ -19,6 +20,7 @@ import {
   FileText,
   AlertCircle,
   CheckCircle,
+  Calendar,
 } from 'lucide-react';
 
 function slugify(text) {
@@ -52,6 +54,7 @@ export default function ArticleEditorModal({
   const [coverImage, setCoverImage] = useState('');
   const [content, setContent] = useState('');
   const [status, setStatus] = useState('draft');
+  const [scheduledAt, setScheduledAt] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [isBreaking, setIsBreaking] = useState(false);
 
@@ -78,6 +81,13 @@ export default function ArticleEditorModal({
         setCoverImage(article.cover_image || article.featured_image || '');
         setContent(article.content || '');
         setStatus(article.status || 'draft');
+        setScheduledAt(
+          article.scheduled_at
+            ? new Date(new Date(article.scheduled_at).getTime() - new Date().getTimezoneOffset() * 60000)
+                .toISOString()
+                .slice(0, 16)
+            : ''
+        );
         setIsFeatured(Boolean(article.is_featured));
         setIsBreaking(Boolean(article.is_breaking));
       } else {
@@ -90,6 +100,7 @@ export default function ArticleEditorModal({
         setCoverImage('');
         setContent('');
         setStatus(isEditorial ? 'published' : 'draft');
+        setScheduledAt('');
         setIsFeatured(false);
         setIsBreaking(false);
       }
@@ -135,9 +146,10 @@ export default function ArticleEditorModal({
     }
   };
 
-  // Word count & reading time
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
-  const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
+  // Word count & dynamic reading time calculation (Task 93)
+  const readingStats = calculateReadingTime(content);
+  const wordCount = readingStats.words;
+  const readingTimeText = readingStats.text;
 
   // Markdown formatting helpers
   const insertFormatting = (prefix, suffix = '', placeholder = '') => {
@@ -196,6 +208,7 @@ export default function ArticleEditorModal({
         cover_image: coverImage.trim() || null,
         content: content.trim(),
         status,
+        scheduled_at: status === 'scheduled' && scheduledAt ? new Date(scheduledAt).toISOString() : null,
         is_featured: isFeatured,
         is_breaking: isBreaking,
       };
@@ -370,7 +383,7 @@ export default function ArticleEditorModal({
               <label className="block text-xs font-serif uppercase tracking-wider font-bold text-gray-800">
                 Editorial Dispatch Body <span className="text-red-700">*</span>
               </label>
-              {/* Telemetry: Word Count & Reading Time */}
+              {/* Telemetry: Word Count & Reading Time (Task 93) */}
               <div className="flex items-center gap-3 text-xs text-gray-500 font-serif">
                 <span className="inline-flex items-center gap-1">
                   <FileText className="w-3.5 h-3.5 text-mcc-maroon" />
@@ -379,7 +392,7 @@ export default function ArticleEditorModal({
                 <span>&bull;</span>
                 <span className="inline-flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-mcc-gold" />
-                  <span>~{readingTimeMinutes} min read</span>
+                  <span>{readingTimeText}</span>
                 </span>
               </div>
             </div>
@@ -472,24 +485,28 @@ export default function ArticleEditorModal({
             />
           </div>
 
-          {/* 6. Publishing Status & Editorial Flags */}
+          {/* 6. Publishing Status & Editorial Flags (Task 94) */}
           <div className="bg-mcc-halfwhite border border-mcc-maroon/20 p-4 rounded-md space-y-4">
             <h4 className="text-xs font-serif uppercase tracking-wider font-bold text-gray-900">
               Publishing Directives & Broadsheet Placement
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-serif font-bold text-gray-700 mb-1">
-                  Lifecycle Status
+                  Editorial Lifecycle Status
                 </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon outline-none bg-white font-semibold"
                 >
-                  <option value="draft">Draft (Saved Locally)</option>
-                  <option value="under_review">Submit for Review</option>
+                  <option value="pitch">Idea / Story Pitch</option>
+                  <option value="draft">Draft in Progress</option>
+                  <option value="in_review">Under Editorial Review</option>
+                  {isEditorial && (
+                    <option value="scheduled">Scheduled for Auto-Publishing</option>
+                  )}
                   {isEditorial && (
                     <option value="published">Published (Live Public Broadsheet)</option>
                   )}
@@ -498,6 +515,21 @@ export default function ArticleEditorModal({
                   )}
                 </select>
               </div>
+
+              {status === 'scheduled' && (
+                <div>
+                  <label className="block text-xs font-serif font-bold text-gray-700 mb-1">
+                    Scheduled Release Timestamp <span className="text-red-700">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    required={status === 'scheduled'}
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                    className="w-full px-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon outline-none bg-white font-mono"
+                  />
+                </div>
+              )}
 
               <div className="flex items-center gap-2 pt-5">
                 <input

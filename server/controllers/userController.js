@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_ROLES = ['super_admin', 'editor', 'reporter', 'faculty'];
@@ -379,10 +380,171 @@ async function toggleUserStatus(req, res, next) {
   }
 }
 
+/**
+ * Update authenticated user's profile (name, bio, avatar_url).
+ * Protected: verifyToken.
+ */
+async function updateProfile(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { name, bio, avatar_url } = req.body;
+
+    const [existing] = await pool.query('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    let updatedName = existing[0].name;
+    if (name !== undefined && name.trim()) updatedName = name.trim();
+
+    let updatedBio = existing[0].bio;
+    if (bio !== undefined) updatedBio = bio ? bio.trim() : null;
+
+    let updatedAvatar = existing[0].avatar_url;
+    if (avatar_url !== undefined) updatedAvatar = avatar_url ? avatar_url.trim() : null;
+
+    await pool.query(
+      'UPDATE users SET name = ?, bio = ?, avatar_url = ? WHERE id = ?',
+      [updatedName, updatedBio, updatedAvatar, userId]
+    );
+
+    const [updatedRows] = await pool.query(
+      `SELECT u.id, u.name, u.email, u.role, u.department_id, d.name AS department_name,
+              u.avatar_url, u.bio, u.is_active, u.created_at, u.updated_at
+       FROM users u
+       LEFT JOIN departments d ON u.department_id = d.id
+       WHERE u.id = ? LIMIT 1`,
+      [userId]
+    );
+
+    await logActivity({
+      userId,
+      action: 'PROFILE_UPDATE',
+      entityType: 'user',
+      entityId: userId,
+      details: { name: updatedName },
+      req,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedRows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Change authenticated user's password.
+ * Protected: verifyToken.
+ */
+async function changePassword(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Current password is required',
+      });
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'New password must be at least 8 characters long',
+      });
+    }
+
+    const [rows] = await pool.query('SELECT password_hash FROM users WHERE id = ? LIMIT 1', [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, rows[0].password_hash);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        error: 'Incorrect current password',
+      });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, userId]);
+
+    await logActivity({
+      userId,
+      action: 'PASSWORD_CHANGE',
+      entityType: 'user',
+      entityId: userId,
+      details: 'User successfully updated security password',
+      req,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Security password changed successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Delete a user/staff account.
+ * Protected: super_admin only. Prevents self-deletion.
+ */
+async function deleteUser(req, res, next) {
+  try {
+    const { id } = req.params;
+    const targetId = parseInt(id, 10);
+
+    if (req.user.id === targetId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete your own administrative account',
+      });
+    }
+
+    const [existing] = await pool.query('SELECT id, name, email, role FROM users WHERE id = ? LIMIT 1', [
+      targetId,
+    ]);
+
+    if (existing.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const deletedUser = existing[0];
+    await pool.query('DELETE FROM users WHERE id = ?', [targetId]);
+
+    await logActivity({
+      userId: req.user.id,
+      action: 'USER_DELETE',
+      entityType: 'user',
+      entityId: targetId,
+      details: { name: deletedUser.name, email: deletedUser.email, role: deletedUser.role },
+      req,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Staff account '${deletedUser.name}' removed successfully`,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   toggleUserStatus,
+  updateProfile,
+  changePassword,
+  deleteUser,
 };

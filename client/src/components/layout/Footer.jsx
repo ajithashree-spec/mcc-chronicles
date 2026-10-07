@@ -123,6 +123,11 @@ export default function Footer() {
                   Pictorial Gazette & Campus Galleries
                 </Link>
               </li>
+              <li>
+                <Link to="/departments" className="text-gray-300 hover:text-white transition-colors">
+                  Department Bureaus & Academic Directory
+                </Link>
+              </li>
             </ul>
           </div>
 

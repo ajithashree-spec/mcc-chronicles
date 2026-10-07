@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
-import { Link2, Check, Printer, Share2 } from 'lucide-react';
+import { Link2, Check, Printer, Share2, Bookmark } from 'lucide-react';
+import { useReadingList } from '../../hooks/useReadingList';
 
 /**
  * Editorial Article Share Bar supporting copy-to-clipboard,
- * WhatsApp, Twitter/X, LinkedIn, and archival print triggering.
+ * WhatsApp, Twitter/X, LinkedIn, archival print triggering, and reading list bookmarking.
  */
-export default function ArticleShareBar({ title = '', url = '', className = '' }) {
+export default function ArticleShareBar({
+  title = '',
+  url = '',
+  article = null,
+  className = '',
+}) {
   const [copied, setCopied] = useState(false);
+  const { isBookmarked, addBookmark, removeBookmark } = useReadingList();
 
   const shareUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
   const shareTitle = title || 'The MCC Chronicles — Official Campus Journal';
@@ -42,6 +49,23 @@ export default function ArticleShareBar({ title = '', url = '', className = '' }
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(shareTitle);
 
+  const articleIdentifier = article?.id || article?.slug || title;
+  const bookmarked = isBookmarked(articleIdentifier);
+
+  const handleToggleBookmark = () => {
+    if (bookmarked) {
+      removeBookmark(articleIdentifier);
+    } else {
+      addBookmark(
+        article || {
+          id: articleIdentifier,
+          title: shareTitle,
+          slug: (url || '').split('/').pop() || String(articleIdentifier),
+        }
+      );
+    }
+  };
+
   return (
     <div className={`no-print flex items-center gap-2 py-3 border-y border-mcc-maroon/15 ${className}`}>
       <div className="flex items-center gap-1.5 text-xs font-serif font-bold uppercase tracking-wider text-mcc-maroon mr-2">
@@ -50,6 +74,25 @@ export default function ArticleShareBar({ title = '', url = '', className = '' }
       </div>
 
       <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Bookmark Dispatch (Task 92) */}
+        <button
+          type="button"
+          onClick={handleToggleBookmark}
+          title={bookmarked ? 'Remove from Personal Reading List' : 'Save / Bookmark Dispatch'}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-serif transition-all border ${
+            bookmarked
+              ? 'bg-mcc-gold/25 text-mcc-maroon border-mcc-gold font-bold shadow-2xs'
+              : 'bg-white hover:bg-mcc-gold/10 text-gray-800 border-gray-300 hover:border-mcc-gold'
+          }`}
+        >
+          <Bookmark
+            className={`w-3.5 h-3.5 ${
+              bookmarked ? 'fill-mcc-maroon text-mcc-maroon' : 'text-mcc-gold'
+            }`}
+          />
+          <span>{bookmarked ? 'Saved in Dossier' : 'Save / Bookmark Dispatch'}</span>
+        </button>
+
         {/* Copy Link */}
         <button
           type="button"

@@ -32,8 +32,19 @@ router.get(
   articleController.getArticleRevisions
 );
 
+// Protected: trigger auto-publisher for scheduled articles (Super Admin, Task 95)
+router.post(
+  '/process-scheduled',
+  verifyToken,
+  requireRole('super_admin'),
+  articleController.processScheduled
+);
+
 // Public single article retrieval with optional auth
 router.get('/:slugOrId', optionalAuth, articleController.getArticleBySlugOrId);
+
+// Protected: quick status transition (Super Admin, Editor, Author, Task 94 & 96)
+router.patch('/:id/status', verifyToken, articleController.updateArticleStatus);
 
 // Protected: create article (Staff)
 router.post(

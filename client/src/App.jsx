@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import ArticleDetail from './pages/ArticleDetail';
 import CategoryArchive from './pages/CategoryArchive';
 import TagArchive from './pages/TagArchive';
+import DepartmentDirectory from './pages/DepartmentDirectory';
 import SearchResults from './pages/SearchResults';
 import CircularsExplorer from './pages/CircularsExplorer';
 import Gallery from './pages/Gallery';
@@ -57,6 +58,15 @@ export default function App() {
           element={
             <Layout>
               <TagArchive />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/departments"
+          element={
+            <Layout>
+              <DepartmentDirectory />
             </Layout>
           }
         />

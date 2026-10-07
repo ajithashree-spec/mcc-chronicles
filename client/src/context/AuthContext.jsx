@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useNavigate } from 'react-router-dom';
 import api, { isTokenValid } from '../services/api';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('mcc_token'));
@@ -102,12 +102,24 @@ export function AuthProvider({ children }) {
     [user]
   );
 
+  /**
+   * Update active user profile in memory and localStorage.
+   */
+  const updateUser = useCallback((updatedData) => {
+    setUser((prev) => {
+      const merged = { ...prev, ...updatedData };
+      localStorage.setItem('mcc_user', JSON.stringify(merged));
+      return merged;
+    });
+  }, []);
+
   const value = {
     user,
     token,
     loading,
     login,
     logout,
+    updateUser,
     isAuthenticated,
     hasRole,
   };
