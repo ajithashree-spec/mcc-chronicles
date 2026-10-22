@@ -22,4 +22,12 @@ router.delete(
   subscriberController.deleteSubscriber
 );
 
+// Protected: Dispatch Morning Quadrangle Digest (Task 105)
+router.post(
+  '/dispatch-digest',
+  verifyToken,
+  requireRole('super_admin', 'editor'),
+  subscriberController.dispatchDigest
+);
+
 module.exports = router;

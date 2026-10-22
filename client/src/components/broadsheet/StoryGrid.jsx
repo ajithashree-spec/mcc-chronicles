@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { Calendar, Clock, ArrowRight } from 'lucide-react';
 
 function getMediaUrl(url) {
-  if (!url) {
-    return 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=800';
+  if (!url || url.includes('unsplash.com')) {
+    return '/images/mcc-academic-quad.jpg';
+  }
+  if (url.startsWith('/images/')) {
+    return url;
   }
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;

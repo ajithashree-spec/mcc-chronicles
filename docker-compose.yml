@@ -1,0 +1,79 @@
+services:
+  # 1. Database Service: MySQL 8.4 LTS
+  db:
+    image: mysql:8.4
+    container_name: mcc_chronicles_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-mcc_chronicles}
+      MYSQL_USER: ${DB_USER:-mcc_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-mcc_password}
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./server/scripts/initDb.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - mcc_network
+
+  # 2. Backend Service: Node.js Express API Engine
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: mcc_chronicles_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      DB_NAME: ${DB_NAME:-mcc_chronicles}
+      JWT_SECRET: ${JWT_SECRET:-mcc_chronicles_super_secret_jwt_key_2026}
+      CLIENT_URL: http://localhost
+    ports:
+      - "5000:5000"
+    volumes:
+      - media_uploads:/app/uploads
+      - backups_data:/app/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - mcc_network
+
+  # 3. Frontend Service: Nginx High-Performance Broadsheet SPA
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: mcc_chronicles_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - mcc_network
+
+volumes:
+  db_data:
+    name: mcc_chronicles_db_data
+  media_uploads:
+    name: mcc_chronicles_media_uploads
+  backups_data:
+    name: mcc_chronicles_backups_data
+
+networks:
+  mcc_network:
+    name: mcc_chronicles_network
+    driver: bridge

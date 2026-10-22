@@ -13,6 +13,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import articleService from '../services/articleService';
+import { highlightKeyword } from '../utils/textHighlighter';
 
 function formatDate(dateStr) {
   if (!dateStr) return 'Recent Dispatch';
@@ -306,11 +307,13 @@ export default function SearchResults() {
                       )}
                     </div>
                     <h3 className="font-serif text-lg sm:text-xl font-bold text-gray-900 group-hover:text-mcc-maroon transition-colors leading-snug">
-                      <Link to={`/article/${art.slug}`}>{art.title}</Link>
+                      <Link to={`/article/${art.slug}`}>
+                        {highlightKeyword(art.title, query)}
+                      </Link>
                     </h3>
                     {art.summary && (
                       <p className="text-xs sm:text-sm font-serif text-gray-600 mt-2 line-clamp-2 leading-relaxed">
-                        {art.summary}
+                        {highlightKeyword(art.summary, query)}
                       </p>
                     )}
                     <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
@@ -344,14 +347,14 @@ export default function SearchResults() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[11px] font-bold text-mcc-navy bg-mcc-navy/5 px-2 py-0.5 rounded border border-mcc-navy/15">
-                          {circ.circular_number}
+                          {highlightKeyword(circ.circular_number, query)}
                         </span>
                         <span className="text-[11px] text-gray-500 font-sans">
                           {formatDate(circ.publish_date)}
                         </span>
                       </div>
                       <h4 className="font-serif text-base font-bold text-gray-900 group-hover:text-mcc-navy transition-colors">
-                        {circ.title}
+                        {highlightKeyword(circ.title, query)}
                       </h4>
                       <p className="text-xs text-gray-600 font-sans">
                         Authority: {circ.department_name || 'Office of Administration'}
@@ -393,10 +396,10 @@ export default function SearchResults() {
                       </span>
                     </div>
                     <h4 className="font-serif text-base font-bold text-mcc-navy">
-                      {dept.name}
+                      {highlightKeyword(dept.name, query)}
                     </h4>
                     <p className="text-xs font-sans text-gray-600 mt-1">
-                      Chair / HOD: {dept.head_of_department || 'Faculty Chair'}
+                      Chair / HOD: {highlightKeyword(dept.head_of_department || 'Faculty Chair', query)}
                     </p>
                     {dept.contact_email && (
                       <p className="text-[11px] font-sans text-gray-500 mt-0.5">

@@ -25,4 +25,11 @@ router.get(
   analyticsController.getDashboardStats
 );
 
+router.get(
+  '/breakdown',
+  verifyToken,
+  requireRole('super_admin', 'editor', 'reporter', 'faculty'),
+  analyticsController.getAnalyticsBreakdown
+);
+
 module.exports = router;

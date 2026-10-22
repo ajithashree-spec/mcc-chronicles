@@ -4,30 +4,28 @@ import {
   Calendar,
   Clock,
   Eye,
-  User,
   ChevronRight,
   ArrowLeft,
-  Share2,
   BookOpen,
-  AlertTriangle,
-  Building,
-  GraduationCap,
   Tag,
 } from 'lucide-react';
 import articleService from '../services/articleService';
 import ReadingProgressBar from '../components/article/ReadingProgressBar';
 import ArticleShareBar from '../components/article/ArticleShareBar';
-import CommentSection from '../components/article/CommentSection';
-import PollWidget from '../components/common/PollWidget';
 import BylineBox from '../components/article/BylineBox';
+import ArticleAudioPlayer from '../components/article/ArticleAudioPlayer';
+import { updateArticleMetaTags, resetMetaTags } from '../utils/metaTags';
 import { calculateReadingTime } from '../utils/readingTime';
 
 /**
  * Normalizes cover image URLs to support both external and local server uploads.
  */
 function getMediaUrl(url) {
-  if (!url) {
-    return 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200';
+  if (!url || url.includes('unsplash.com')) {
+    return '/images/mcc-campus-hero.jpg';
+  }
+  if (url.startsWith('/images/')) {
+    return url;
   }
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
@@ -65,37 +63,6 @@ function getReadingTime(content, summary, explicitTime) {
   return computed.text;
 }
 
-// Fallback articles if current article or related search is offline
-const FALLBACK_RELATED = [
-  {
-    id: 'rel-1',
-    slug: 'centennial-celebrations-anderson-quadrangle-research-grants',
-    title: 'Centennial Celebrations in Anderson Quadrangle: 187th Academic Year Commences',
-    summary: 'Scholars and faculty unveil major interdisciplinary research initiatives.',
-    category_name: 'Campus News',
-    published_at: '2026-10-04T08:00:00Z',
-    cover_image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600',
-  },
-  {
-    id: 'rel-2',
-    slug: 'botany-department-rare-medicinal-flora-discovery',
-    title: 'Botany Department Discovers Rare Medicinal Flora in Southern Scrub Woodland',
-    summary: 'Decades of longitudinal botanical research yields catalog of native species.',
-    category_name: 'Science & Research',
-    published_at: '2026-10-03T11:00:00Z',
-    cover_image: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=600',
-  },
-  {
-    id: 'rel-3',
-    slug: 'deepwoods-2026-concert-finale-lineup-announced',
-    title: 'DeepWoods 2026 Concert Lineup: Legendary Woods Stage to Host National Bands',
-    summary: 'The cultural committee reveals headline acts for the 46th festival edition.',
-    category_name: 'DeepWoods 2026',
-    published_at: '2026-10-02T14:30:00Z',
-    cover_image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600',
-  },
-];
-
 export default function ArticleDetail() {
   const { slug } = useParams();
   const [article, setArticle] = useState(null);
@@ -118,6 +85,7 @@ export default function ArticleDetail() {
         if (res.data) {
           const art = res.data.data || res.data;
           setArticle(art);
+          updateArticleMetaTags(art);
 
           // Fetch related articles based on category
           try {
@@ -128,10 +96,10 @@ export default function ArticleDetail() {
             if (isMounted && relRes.data) {
               const list = Array.isArray(relRes.data) ? relRes.data : (relRes.data.data || []);
               const filtered = list.filter((item) => String(item.id) !== String(art.id)).slice(0, 3);
-              setRelatedArticles(filtered.length > 0 ? filtered : FALLBACK_RELATED);
+              setRelatedArticles(filtered);
             }
           } catch {
-            if (isMounted) setRelatedArticles(FALLBACK_RELATED);
+            if (isMounted) setRelatedArticles([]);
           }
         } else {
           setNotFound(true);
@@ -139,21 +107,7 @@ export default function ArticleDetail() {
       } catch (err) {
         console.error('Failed to load article by slug:', err);
         if (isMounted) {
-          // Check if matches fallback
-          const matchedFallback = FALLBACK_RELATED.find((f) => f.slug === slug);
-          if (matchedFallback) {
-            setArticle({
-              ...matchedFallback,
-              content:
-                'In a landmark convocation held under the ancient rain trees of the historic Tambaram campus, the Governing Board alongside academic deans announced the formal inauguration of the Research Initiative. The multi-departmental consortium brings together scholars from English, History, Botany, Mathematics, and Computer Science to document two centuries of biodiversity and literary culture in Southern India.\n\n"Madras Christian College has never been merely a center of instruction; it has forever stood as a sanctuary of thoughtful engagement with society," remarked the Principal during the keynote address in the Miller Memorial Quadrangle.\n\nThe initiative will establish three advanced computing labs and an open-access archival digitized repository commemorating distinguished alumni and former faculty.',
-              author_name: 'MCC Editorial Board',
-              department_name: 'College Administration',
-              views_count: 142,
-            });
-            setRelatedArticles(FALLBACK_RELATED.filter((f) => f.slug !== slug));
-          } else {
-            setNotFound(true);
-          }
+          setNotFound(true);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -164,6 +118,7 @@ export default function ArticleDetail() {
 
     return () => {
       isMounted = false;
+      resetMetaTags();
     };
   }, [slug]);
 
@@ -367,6 +322,14 @@ export default function ArticleDetail() {
           </figure>
         )}
 
+        {/* 9b. WEB SPEECH DISPATCH AUDIO PLAYER (Task 107) */}
+        <ArticleAudioPlayer
+          title={article.title}
+          summary={article.summary}
+          content={typeof article.content === 'string' ? article.content : ''}
+          authorName={authorName}
+        />
+
         {/* 10. ARTICLE BODY: VINTAGE PROSE STYLING & DROP-CAP */}
         <div className="broadsheet-prose font-serif text-gray-900 leading-relaxed text-lg sm:text-xl space-y-6 pt-2">
           {paragraphs.length > 0 ? (
@@ -430,7 +393,7 @@ export default function ArticleDetail() {
                 to="/"
                 className="text-xs font-serif font-bold text-mcc-maroon hover:text-mcc-maroon-dark uppercase tracking-wider"
               >
-                All Archives →
+                All Dispatches →
               </Link>
             </div>
 
@@ -469,13 +432,6 @@ export default function ArticleDetail() {
           </section>
         )}
 
-        {/* 13. READER COMMENTS SECTION */}
-        <CommentSection articleId={article.id} />
-
-        {/* 14. CAMPUS OPINION POLL / BAROMETER (Task 85) */}
-        <div className="no-print mt-12 pt-8 border-t border-gray-200">
-          <PollWidget />
-        </div>
       </article>
     </>
   );

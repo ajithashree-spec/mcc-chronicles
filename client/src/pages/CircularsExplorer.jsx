@@ -25,56 +25,7 @@ const AUDIENCE_FILTERS = [
   { label: 'Staff & Administration', value: 'staff' },
 ];
 
-const FALLBACK_CIRCULARS = [
-  {
-    id: 1,
-    circular_number: 'MCC/COE/2026/08',
-    title: 'End-Semester Examination Time Table & Hall Ticket Generation Schedule',
-    content:
-      'All undergraduate and postgraduate students are hereby notified that the End-Semester Examination timetable for the November 2026 session has been finalized. Hall tickets will be available for download from the collegiate student portal starting October 15, 2026. Please verify candidate details and room allocations.',
-    target_audience: 'students',
-    department_name: 'Controller of Examinations',
-    is_pinned: 1,
-    publish_date: '2026-10-04',
-    attachment_url: '/uploads/circulars/coe-2026-08.pdf',
-  },
-  {
-    id: 2,
-    circular_number: 'MCC/ADM/2026/14',
-    title: 'Anderson Quadrangle Convocation Rehearsal & Protocol Guidelines',
-    content:
-      'Graduands of the Class of 2026 are invited to attend the mandatory convocation protocol briefing in Anderson Hall on Friday at 3:00 PM. Academic regalia distribution counters will operate outside the Bursar Office.',
-    target_audience: 'all',
-    department_name: 'Office of the Principal',
-    is_pinned: 1,
-    publish_date: '2026-10-02',
-    attachment_url: '/uploads/circulars/adm-2026-14.pdf',
-  },
-  {
-    id: 3,
-    circular_number: 'MCC/FAC/2026/03',
-    title: 'Call for Proposals: Interdisciplinary Climate Resilience Research Grant',
-    content:
-      'Faculty members across Arts and Science streams are invited to submit joint research proposals for the 2026-2027 Institutional Research Grant. Proposals must focus on environmental conservation or digital humanities in Southern India.',
-    target_audience: 'faculty',
-    department_name: 'Research & Development Council',
-    is_pinned: 0,
-    publish_date: '2026-09-28',
-    attachment_url: '/uploads/circulars/fac-2026-03.pdf',
-  },
-  {
-    id: 4,
-    circular_number: 'MCC/STU/2026/19',
-    title: 'DeepWoods 2026 Volunteer Registrations & Stage Crew Applications',
-    content:
-      'The Student Union and Cultural Committee invite second and third-year scholars to enlist as logistics, hospitality, and stage security volunteers for the upcoming 46th edition of DeepWoods.',
-    target_audience: 'students',
-    department_name: 'Student Affairs',
-    is_pinned: 0,
-    publish_date: '2026-09-25',
-    attachment_url: null,
-  },
-];
+
 
 function formatDate(dateStr) {
   if (!dateStr) return 'Gazette Notice';
@@ -145,32 +96,14 @@ export default function CircularsExplorer() {
 
         if (res.data) {
           const list = Array.isArray(res.data) ? res.data : (res.data.data || []);
-          if (list.length > 0) {
-            setCirculars(list);
-          } else {
-            // Apply client-side filter on fallbacks
-            let filtered = FALLBACK_CIRCULARS;
-            if (selectedAudience !== 'all') {
-              filtered = filtered.filter(
-                (c) => c.target_audience === selectedAudience || c.target_audience === 'all'
-              );
-            }
-            if (searchQuery.trim()) {
-              const q = searchQuery.toLowerCase();
-              filtered = filtered.filter(
-                (c) =>
-                  c.title.toLowerCase().includes(q) ||
-                  c.circular_number.toLowerCase().includes(q) ||
-                  c.content.toLowerCase().includes(q)
-              );
-            }
-            setCirculars(filtered);
-          }
+          setCirculars(list);
+        } else {
+          setCirculars([]);
         }
       } catch (err) {
         console.error('Failed to load circulars list:', err);
         if (isMounted) {
-          setCirculars(FALLBACK_CIRCULARS);
+          setCirculars([]);
         }
       } finally {
         if (isMounted) setLoading(false);

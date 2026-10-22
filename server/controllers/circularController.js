@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const sseService = require('../services/sseService');
 
 /**
  * Retrieve public circulars.
@@ -201,6 +202,19 @@ async function createCircular(req, res, next) {
       [result.insertId]
     );
 
+    if (is_pinned || req.body.is_urgent || req.body.urgent) {
+      try {
+        sseService.broadcast('circular:urgent', {
+          id: result.insertId,
+          title: createdRows[0]?.title || title.trim(),
+          reference_no: createdRows[0]?.circular_number || circular_number.trim(),
+          department: createdRows[0]?.department_name || 'Gazette Desk',
+        });
+      } catch (sseErr) {
+        console.warn('Failed to broadcast urgent circular via SSE:', sseErr.message);
+      }
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Circular published successfully',
@@ -321,6 +335,19 @@ async function updateCircular(req, res, next) {
       WHERE c.id = ?`,
       [id]
     );
+
+    if (updatedIsPinned || req.body.is_urgent || req.body.urgent) {
+      try {
+        sseService.broadcast('circular:urgent', {
+          id: parseInt(id, 10),
+          title: updatedRows[0]?.title || current.title,
+          reference_no: updatedRows[0]?.circular_number || current.circular_number,
+          department: updatedRows[0]?.department_name || 'Gazette Desk',
+        });
+      } catch (sseErr) {
+        console.warn('Failed to broadcast updated urgent circular via SSE:', sseErr.message);
+      }
+    }
 
     return res.status(200).json({
       success: true,

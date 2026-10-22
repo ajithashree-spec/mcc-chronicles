@@ -116,6 +116,82 @@ export const articleService = {
   },
 
   /**
+   * Create a new department (Super Admin only).
+   * @param {Object} data
+   * @returns {Promise<{success: boolean, data: Object}>}
+   */
+  async createDepartment(data) {
+    return api.post('/departments', data);
+  },
+
+  /**
+   * Update an existing department (Super Admin only).
+   * @param {number|string} id
+   * @param {Object} data
+   * @returns {Promise<{success: boolean, data: Object}>}
+   */
+  async updateDepartment(id, data) {
+    return api.put(`/departments/${id}`, data);
+  },
+
+  /**
+   * Delete a department (Super Admin only).
+   * @param {number|string} id
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async deleteDepartment(id) {
+    return api.delete(`/departments/${id}`);
+  },
+
+  /**
+   * Fetch all news categories with published article counts.
+   * @returns {Promise<{success: boolean, data: Array, count: number}>}
+   */
+  async getCategories() {
+    return api.get('/categories');
+  },
+
+  /**
+   * Fetch single category by slug or id.
+   * @param {string|number} slug
+   * @returns {Promise<{success: boolean, data: Object}>}
+   */
+  async getCategoryBySlug(slug) {
+    return api.get(`/categories/${encodeURIComponent(slug)}`);
+  },
+
+  /**
+   * Create a new category (Super Admin / Editor).
+   * @param {Object} data
+   * @param {string} data.name
+   * @param {string} [data.slug]
+   * @param {string} [data.description]
+   * @returns {Promise<{success: boolean, data: Object}>}
+   */
+  async createCategory(data) {
+    return api.post('/categories', data);
+  },
+
+  /**
+   * Update category details (Super Admin / Editor).
+   * @param {number|string} id
+   * @param {Object} data
+   * @returns {Promise<{success: boolean, data: Object}>}
+   */
+  async updateCategory(id, data) {
+    return api.put(`/categories/${id}`, data);
+  },
+
+  /**
+   * Delete category (Super Admin only).
+   * @param {number|string} id
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async deleteCategory(id) {
+    return api.delete(`/categories/${id}`);
+  },
+
+  /**
    * Fetch detailed list of circulars with search and filter parameters.
    * @param {Object} [params]
    * @returns {Promise<{success: boolean, data: Array, count: number}>}
@@ -178,6 +254,22 @@ export const articleService = {
    */
   async getAnalytics() {
     return api.get('/analytics');
+  },
+
+  /**
+   * Fetch readership breakdown trends and category distributions (Task 111 & 112).
+   * @returns {Promise<{success: boolean, data: Object}>}
+   */
+  async getAnalyticsBreakdown() {
+    return api.get('/analytics/breakdown');
+  },
+
+  /**
+   * Dispatch Morning Quadrangle Digest to subscribers (Task 105).
+   * @returns {Promise<{success: boolean, message: string, recipientsCount: number, digestHtml: string}>}
+   */
+  async dispatchNewsletterDigest() {
+    return api.post('/subscribers/dispatch-digest');
   },
 
   /**
@@ -411,24 +503,6 @@ export const articleService = {
         'Content-Type': 'multipart/form-data',
       },
     });
-  },
-
-  /**
-   * Fetch active campus opinion poll (Task 85).
-   * @returns {Promise<{success: boolean, data: Object}>}
-   */
-  async getActivePoll() {
-    return api.get('/polls/active');
-  },
-
-  /**
-   * Cast a vote in a campus poll (Task 85).
-   * @param {number|string} pollId
-   * @param {number} optionIndex
-   * @returns {Promise<{success: boolean, message: string, data: Object}>}
-   */
-  async castPollVote(pollId, optionIndex) {
-    return api.post(`/polls/${encodeURIComponent(pollId)}/vote`, { optionIndex });
   },
 
   /**

@@ -14,6 +14,7 @@ async function getAllDepartments(req, res, next) {
          d.stream,
          d.head_of_department,
          d.contact_email,
+         d.description,
          d.created_at,
          COUNT(u.id) AS member_count
        FROM departments d
@@ -48,6 +49,7 @@ async function getDepartmentById(req, res, next) {
          d.stream,
          d.head_of_department,
          d.contact_email,
+         d.description,
          d.created_at,
          COUNT(u.id) AS member_count
        FROM departments d
@@ -80,7 +82,7 @@ async function getDepartmentById(req, res, next) {
  */
 async function createDepartment(req, res, next) {
   try {
-    const { name, code, stream = 'Aided', head_of_department = null, contact_email = null } = req.body;
+    const { name, code, stream = 'Aided', head_of_department = null, contact_email = null, description = null } = req.body;
 
     if (!name || !code) {
       return res.status(400).json({
@@ -111,14 +113,15 @@ async function createDepartment(req, res, next) {
     }
 
     const [result] = await pool.query(
-      `INSERT INTO departments (name, code, stream, head_of_department, contact_email)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO departments (name, code, stream, head_of_department, contact_email, description)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         name.trim(),
         code.trim().toUpperCase(),
         stream,
         head_of_department ? head_of_department.trim() : null,
         contact_email ? contact_email.trim().toLowerCase() : null,
+        description ? description.trim() : null,
       ]
     );
 
@@ -129,6 +132,7 @@ async function createDepartment(req, res, next) {
       stream,
       head_of_department: head_of_department ? head_of_department.trim() : null,
       contact_email: contact_email ? contact_email.trim().toLowerCase() : null,
+      description: description ? description.trim() : null,
     };
 
     return res.status(201).json({
@@ -148,7 +152,7 @@ async function createDepartment(req, res, next) {
 async function updateDepartment(req, res, next) {
   try {
     const { id } = req.params;
-    const { name, code, stream, head_of_department, contact_email } = req.body;
+    const { name, code, stream, head_of_department, contact_email, description } = req.body;
 
     const [existing] = await pool.query(
       'SELECT * FROM departments WHERE id = ? LIMIT 1',
@@ -192,12 +196,13 @@ async function updateDepartment(req, res, next) {
     const updatedStream = stream !== undefined ? stream : currentDept.stream;
     const updatedHod = head_of_department !== undefined ? (head_of_department ? head_of_department.trim() : null) : currentDept.head_of_department;
     const updatedEmail = contact_email !== undefined ? (contact_email ? contact_email.trim().toLowerCase() : null) : currentDept.contact_email;
+    const updatedDescription = description !== undefined ? (description ? description.trim() : null) : currentDept.description;
 
     await pool.query(
       `UPDATE departments 
-       SET name = ?, code = ?, stream = ?, head_of_department = ?, contact_email = ?
+       SET name = ?, code = ?, stream = ?, head_of_department = ?, contact_email = ?, description = ?
        WHERE id = ?`,
-      [updatedName, updatedCode, updatedStream, updatedHod, updatedEmail, id]
+      [updatedName, updatedCode, updatedStream, updatedHod, updatedEmail, updatedDescription, id]
     );
 
     const [updatedRows] = await pool.query(

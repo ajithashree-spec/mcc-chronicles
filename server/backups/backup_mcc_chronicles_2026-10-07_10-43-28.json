@@ -1,0 +1,955 @@
+{
+  "metadata": {
+    "timestamp": "2026-10-07T10:43:28.442Z",
+    "database": "mcc_chronicles",
+    "version": "1.0.0",
+    "tablesIncluded": [
+      "departments",
+      "users",
+      "categories",
+      "articles",
+      "article_revisions",
+      "tags",
+      "article_tags",
+      "article_authors",
+      "comments",
+      "circulars",
+      "galleries",
+      "activity_logs",
+      "subscribers",
+      "contact_messages",
+      "polls",
+      "poll_votes",
+      "bookmarks",
+      "article_assignments"
+    ]
+  },
+  "tables": {
+    "departments": [
+      {
+        "id": 1,
+        "name": "English",
+        "code": "ENG-A",
+        "stream": "Aided",
+        "head_of_department": "Dr. J. English",
+        "contact_email": "english@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 2,
+        "name": "History",
+        "code": "HIST-A",
+        "stream": "Aided",
+        "head_of_department": "Dr. H. History",
+        "contact_email": "history@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 3,
+        "name": "Economics",
+        "code": "ECON-A",
+        "stream": "Aided",
+        "head_of_department": "Dr. E. Economics",
+        "contact_email": "economics@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 4,
+        "name": "Commerce",
+        "code": "COMM-A",
+        "stream": "Aided",
+        "head_of_department": "Dr. C. Commerce",
+        "contact_email": "commerce@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 5,
+        "name": "Mathematics",
+        "code": "MATH-A",
+        "stream": "Aided",
+        "head_of_department": "Dr. M. Mathematics",
+        "contact_email": "maths@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 6,
+        "name": "Physics",
+        "code": "PHYS-A",
+        "stream": "Aided",
+        "head_of_department": "Dr. P. Physics",
+        "contact_email": "physics@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 7,
+        "name": "Chemistry",
+        "code": "CHEM-A",
+        "stream": "Aided",
+        "head_of_department": "Dr. C. Chemistry",
+        "contact_email": "chemistry@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 8,
+        "name": "Computer Science",
+        "code": "CS-S",
+        "stream": "Self-Financed",
+        "head_of_department": "Dr. S. Computer",
+        "contact_email": "cs@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 9,
+        "name": "Journalism",
+        "code": "JOURN-S",
+        "stream": "Self-Financed",
+        "head_of_department": "Dr. J. Journalism",
+        "contact_email": "journalism@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 10,
+        "name": "Administration",
+        "code": "ADMIN",
+        "stream": "Aided",
+        "head_of_department": "Principal Office",
+        "contact_email": "principal@mcc.edu.in",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      }
+    ],
+    "users": [
+      {
+        "id": 1,
+        "name": "MCC Super Admin",
+        "email": "admin@mcc.edu.in",
+        "password_hash": "$2b$10$1MXEm5w7Bc9APNQRWBRdV.FFgWKBFcmjFFTBmgLVnSotgciC3EdUm",
+        "role": "super_admin",
+        "department_id": 10,
+        "avatar_url": null,
+        "bio": null,
+        "is_active": 1,
+        "created_at": "2026-10-01T08:58:36.000Z",
+        "updated_at": "2026-10-01T09:33:00.000Z"
+      }
+    ],
+    "categories": [
+      {
+        "id": 1,
+        "name": "Campus News",
+        "slug": "campus-news",
+        "description": "Official announcements, events, and administrative circulars",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 2,
+        "name": "Academics",
+        "slug": "academics",
+        "description": "Curriculum updates, conferences, seminars, and lectures",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 3,
+        "name": "Sports",
+        "slug": "sports",
+        "description": "Inter-collegiate tournaments, campus leagues, and athletic meets",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 4,
+        "name": "Cultural",
+        "slug": "cultural",
+        "description": "DeepWoods festival, theater, fine arts, and musical society events",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 5,
+        "name": "Research",
+        "slug": "research",
+        "description": "Faculty and student publications, grants, and discoveries",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      },
+      {
+        "id": 6,
+        "name": "Alumni Spotlight",
+        "slug": "alumni-spotlight",
+        "description": "Features on notable alumni and global MCCian achievements",
+        "created_at": "2026-10-01T08:58:36.000Z"
+      }
+    ],
+    "articles": [
+      {
+        "id": 2,
+        "title": "Revised Dispatch 1791356619797",
+        "slug": "revised-dispatch-1791356619797",
+        "summary": "Annual cultural festival registrations are officially live.",
+        "content": "Madras Christian College invites colleges nationwide for DeepWoods 2026.",
+        "cover_image": null,
+        "status": "published",
+        "is_featured": 0,
+        "is_breaking": 0,
+        "views_count": 2,
+        "author_id": 1,
+        "category_id": 4,
+        "department_id": 10,
+        "published_at": "2026-10-01T10:26:56.000Z",
+        "created_at": "2026-10-01T10:26:56.000Z",
+        "updated_at": "2026-10-07T07:03:39.000Z",
+        "scheduled_at": null
+      },
+      {
+        "id": 3,
+        "title": "MCC Campus News Roundup October 2026",
+        "slug": "mcc-campus-news-roundup-october-2026",
+        "summary": "Latest campus news and event updates from Madras Christian College.",
+        "content": "Detailed news report about upcoming events at MCC.",
+        "cover_image": null,
+        "status": "published",
+        "is_featured": 1,
+        "is_breaking": 0,
+        "views_count": 0,
+        "author_id": 1,
+        "category_id": 1,
+        "department_id": null,
+        "published_at": "2026-10-01T11:18:10.000Z",
+        "created_at": "2026-10-01T11:18:10.000Z",
+        "updated_at": "2026-10-01T11:18:10.000Z",
+        "scheduled_at": null
+      }
+    ],
+    "article_revisions": [
+      {
+        "id": 1,
+        "article_id": 2,
+        "editor_id": 1,
+        "title": "DeepWoods 2026 Registration Opens",
+        "content": "Madras Christian College invites colleges nationwide for DeepWoods 2026.",
+        "excerpt": "Annual cultural festival registrations are officially live.",
+        "change_summary": "Major factual revision in morning desk",
+        "created_at": "2026-10-07T07:03:39.000Z"
+      }
+    ],
+    "tags": [
+      {
+        "id": 1,
+        "name": "Campus Life 1791356619716",
+        "slug": "campus-life-1791356619716",
+        "created_at": "2026-10-07T07:03:39.000Z"
+      }
+    ],
+    "article_tags": [],
+    "article_authors": [],
+    "comments": [],
+    "circulars": [
+      {
+        "id": 2,
+        "title": "End Semester Examination Time Table & Instructions",
+        "circular_number": "MCC/COE/2026/04",
+        "content": "Instructions and schedule for the upcoming November 2026 End Semester Examinations.",
+        "attachment_url": null,
+        "department_id": null,
+        "target_audience": "students",
+        "is_pinned": 1,
+        "is_active": 1,
+        "publish_date": "2026-09-30T18:30:00.000Z",
+        "created_at": "2026-10-01T11:13:40.000Z",
+        "updated_at": "2026-10-01T11:13:40.000Z"
+      },
+      {
+        "id": 3,
+        "title": "Annual Convocation 2026 Registration Notice",
+        "circular_number": "MCC/ACAD/2026/12",
+        "content": "Graduands of the 2025-2026 academic year are requested to complete convocation registration.",
+        "attachment_url": null,
+        "department_id": null,
+        "target_audience": "all",
+        "is_pinned": 0,
+        "is_active": 1,
+        "publish_date": "2026-09-27T18:30:00.000Z",
+        "created_at": "2026-10-01T11:13:40.000Z",
+        "updated_at": "2026-10-01T11:13:40.000Z"
+      }
+    ],
+    "galleries": [
+      {
+        "id": 2,
+        "title": "MCC Historic Main Hall Quadrangle",
+        "description": "The iconic red brick architecture of Madras Christian College during twilight.",
+        "image_url": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200",
+        "caption": "Sunset over the Anderson Hall quadrangle",
+        "event_name": "Campus Life",
+        "department_id": 1,
+        "uploaded_by": 1,
+        "is_featured_carousel": 1,
+        "created_at": "2026-10-01T11:27:00.000Z"
+      },
+      {
+        "id": 3,
+        "title": "DeepWoods 2026 Cultural Extravaganza",
+        "description": "Electrifying atmosphere during the annual cultural fest.",
+        "image_url": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200",
+        "caption": "Student crowds at DeepWoods live concert",
+        "event_name": "DeepWoods 2026",
+        "department_id": 1,
+        "uploaded_by": 1,
+        "is_featured_carousel": 1,
+        "created_at": "2026-10-01T11:27:00.000Z"
+      },
+      {
+        "id": 4,
+        "title": "Miller Memorial Library & Research Hub",
+        "description": "Quiet study hours in the serene woodland campus library.",
+        "image_url": "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=1200",
+        "caption": "Students engaged in collaborative research",
+        "event_name": "Academics",
+        "department_id": 5,
+        "uploaded_by": 1,
+        "is_featured_carousel": 0,
+        "created_at": "2026-10-01T11:27:00.000Z"
+      }
+    ],
+    "activity_logs": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:28:36.000Z"
+      },
+      {
+        "id": 2,
+        "user_id": 1,
+        "action": "ARTICLE_PUBLISH",
+        "entity_type": "article",
+        "entity_id": 101,
+        "details": "{\"title\":\"MCC Celebrates 187th Anniversary\",\"status\":\"published\"}",
+        "ip_address": "127.0.0.1",
+        "created_at": "2026-10-05T06:28:36.000Z"
+      },
+      {
+        "id": 3,
+        "user_id": 1,
+        "action": "SETTINGS_UPDATE",
+        "entity_type": "setting",
+        "entity_id": null,
+        "details": "{\"setting_key\":\"site_title\",\"setting_value\":\"Madras Christian College Chronicles\"}",
+        "ip_address": "192.168.1.50",
+        "created_at": "2026-10-05T06:28:36.000Z"
+      },
+      {
+        "id": 4,
+        "user_id": 1,
+        "action": "USER_CREATE",
+        "entity_type": "user",
+        "entity_id": 202,
+        "details": "{\"new_user_email\":\"newreporter@mcc.edu.in\",\"assigned_role\":\"reporter\"}",
+        "ip_address": "10.0.0.1",
+        "created_at": "2026-10-05T06:28:36.000Z"
+      },
+      {
+        "id": 5,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:29:42.000Z"
+      },
+      {
+        "id": 6,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:29:56.000Z"
+      },
+      {
+        "id": 7,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:36:16.000Z"
+      },
+      {
+        "id": 8,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_JSON",
+        "entity_type": "backup",
+        "entity_id": null,
+        "details": "{\"format\":\"json\",\"tables\":[\"site_settings\",\"departments\",\"categories\",\"users\",\"articles\",\"comments\",\"circulars\",\"galleries\",\"activity_logs\"]}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:36:16.000Z"
+      },
+      {
+        "id": 9,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_CSV",
+        "entity_type": "articles",
+        "entity_id": null,
+        "details": "{\"format\":\"csv\",\"count\":2}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:36:16.000Z"
+      },
+      {
+        "id": 11,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:36:56.000Z"
+      },
+      {
+        "id": 12,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_JSON",
+        "entity_type": "backup",
+        "entity_id": null,
+        "details": "{\"format\":\"json\",\"tables\":[\"site_settings\",\"departments\",\"categories\",\"users\",\"articles\",\"comments\",\"circulars\",\"galleries\",\"activity_logs\"]}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:36:56.000Z"
+      },
+      {
+        "id": 13,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_CSV",
+        "entity_type": "articles",
+        "entity_id": null,
+        "details": "{\"format\":\"csv\",\"count\":2}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:36:56.000Z"
+      },
+      {
+        "id": 15,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:37:45.000Z"
+      },
+      {
+        "id": 16,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_JSON",
+        "entity_type": "backup",
+        "entity_id": null,
+        "details": "{\"format\":\"json\",\"tables\":[\"site_settings\",\"departments\",\"categories\",\"users\",\"articles\",\"comments\",\"circulars\",\"galleries\",\"activity_logs\"]}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:37:45.000Z"
+      },
+      {
+        "id": 17,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_CSV",
+        "entity_type": "articles",
+        "entity_id": null,
+        "details": "{\"format\":\"csv\",\"count\":2}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:37:45.000Z"
+      },
+      {
+        "id": 19,
+        "user_id": null,
+        "action": "BACKUP_EXPORT_CSV",
+        "entity_type": "articles",
+        "entity_id": null,
+        "details": "{\"format\":\"csv\",\"count\":2} (unreferenced_user_id: 888)",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:37:45.000Z"
+      },
+      {
+        "id": 20,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:39:03.000Z"
+      },
+      {
+        "id": 21,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_JSON",
+        "entity_type": "backup",
+        "entity_id": null,
+        "details": "{\"format\":\"json\",\"tables\":[\"site_settings\",\"departments\",\"categories\",\"users\",\"articles\",\"comments\",\"circulars\",\"galleries\",\"activity_logs\"]}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:39:04.000Z"
+      },
+      {
+        "id": 22,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_CSV",
+        "entity_type": "articles",
+        "entity_id": null,
+        "details": "{\"format\":\"csv\",\"count\":2}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:39:04.000Z"
+      },
+      {
+        "id": 24,
+        "user_id": null,
+        "action": "BACKUP_EXPORT_CSV",
+        "entity_type": "articles",
+        "entity_id": null,
+        "details": "{\"format\":\"csv\",\"count\":2} (unreferenced_user_id: 888)",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:39:04.000Z"
+      },
+      {
+        "id": 25,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T06:40:16.000Z"
+      },
+      {
+        "id": 26,
+        "user_id": 1,
+        "action": "ARTICLE_PUBLISH",
+        "entity_type": "article",
+        "entity_id": 101,
+        "details": "{\"title\":\"MCC Celebrates 187th Anniversary\",\"status\":\"published\"}",
+        "ip_address": "127.0.0.1",
+        "created_at": "2026-10-05T06:40:16.000Z"
+      },
+      {
+        "id": 27,
+        "user_id": 1,
+        "action": "SETTINGS_UPDATE",
+        "entity_type": "setting",
+        "entity_id": null,
+        "details": "{\"setting_key\":\"site_title\",\"setting_value\":\"Madras Christian College Chronicles\"}",
+        "ip_address": "192.168.1.50",
+        "created_at": "2026-10-05T06:40:16.000Z"
+      },
+      {
+        "id": 28,
+        "user_id": 1,
+        "action": "USER_CREATE",
+        "entity_type": "user",
+        "entity_id": 202,
+        "details": "{\"new_user_email\":\"newreporter@mcc.edu.in\",\"assigned_role\":\"reporter\"}",
+        "ip_address": "10.0.0.1",
+        "created_at": "2026-10-05T06:40:16.000Z"
+      },
+      {
+        "id": 29,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:28.000Z"
+      },
+      {
+        "id": 30,
+        "user_id": null,
+        "action": "NEWSLETTER_SUBSCRIBE",
+        "entity_type": "subscriber",
+        "entity_id": 1,
+        "details": "{\"email\":\"subscriber_1791190168247@mcc.edu.in\",\"frequency\":\"weekly\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:28.000Z"
+      },
+      {
+        "id": 31,
+        "user_id": null,
+        "action": "NEWSLETTER_UNSUBSCRIBE",
+        "entity_type": "subscriber",
+        "entity_id": 1,
+        "details": "{\"email\":\"subscriber_1791190168247@mcc.edu.in\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:28.000Z"
+      },
+      {
+        "id": 32,
+        "user_id": 1,
+        "action": "NEWSLETTER_DELETE_SUBSCRIBER",
+        "entity_type": "subscriber",
+        "entity_id": 1,
+        "details": "{\"email\":\"subscriber_1791190168247@mcc.edu.in\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:28.000Z"
+      },
+      {
+        "id": 33,
+        "user_id": null,
+        "action": "CONTACT_SUBMIT",
+        "entity_type": "contact_message",
+        "entity_id": 1,
+        "details": "{\"email\":\"alexander@mcc.edu.in\",\"subject\":\"Historical Archive Research Contribution\",\"category\":\"editorial_tip\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:28.000Z"
+      },
+      {
+        "id": 34,
+        "user_id": 1,
+        "action": "CONTACT_MESSAGE_UPDATE",
+        "entity_type": "contact_message",
+        "entity_id": 1,
+        "details": "{\"status\":\"in_progress\",\"has_admin_notes\":true}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:28.000Z"
+      },
+      {
+        "id": 35,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_JSON",
+        "entity_type": "backup",
+        "entity_id": null,
+        "details": "{\"format\":\"json\",\"tables\":[\"site_settings\",\"departments\",\"categories\",\"users\",\"articles\",\"comments\",\"circulars\",\"galleries\",\"activity_logs\",\"subscribers\",\"contact_messages\"]}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:28.000Z"
+      },
+      {
+        "id": 36,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:43.000Z"
+      },
+      {
+        "id": 37,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_JSON",
+        "entity_type": "backup",
+        "entity_id": null,
+        "details": "{\"format\":\"json\",\"tables\":[\"site_settings\",\"departments\",\"categories\",\"users\",\"articles\",\"comments\",\"circulars\",\"galleries\",\"activity_logs\",\"subscribers\",\"contact_messages\"]}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:43.000Z"
+      },
+      {
+        "id": 38,
+        "user_id": 1,
+        "action": "BACKUP_EXPORT_CSV",
+        "entity_type": "articles",
+        "entity_id": null,
+        "details": "{\"format\":\"csv\",\"count\":2}",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:43.000Z"
+      },
+      {
+        "id": 40,
+        "user_id": null,
+        "action": "BACKUP_EXPORT_CSV",
+        "entity_type": "articles",
+        "entity_id": null,
+        "details": "{\"format\":\"csv\",\"count\":2} (unreferenced_user_id: 888)",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:43.000Z"
+      },
+      {
+        "id": 41,
+        "user_id": null,
+        "action": "CONTACT_SUBMIT",
+        "entity_type": "contact_message",
+        "entity_id": 2,
+        "details": "{\"email\":\"society@mcc.edu.in\",\"subject\":\"Rare 19th Century Photographs of Anderson Quadrangle Foundation\",\"category\":\"editorial_tip\"}",
+        "ip_address": "127.0.0.1",
+        "created_at": "2026-10-05T10:21:49.000Z"
+      },
+      {
+        "id": 42,
+        "user_id": null,
+        "action": "NEWSLETTER_SUBSCRIBE",
+        "entity_type": "subscriber",
+        "entity_id": 2,
+        "details": "{\"email\":\"anderson.alumnus@mcc.edu.in\",\"frequency\":\"weekly\"}",
+        "ip_address": "127.0.0.1",
+        "created_at": "2026-10-05T10:29:49.000Z"
+      },
+      {
+        "id": 43,
+        "user_id": null,
+        "action": "NEWSLETTER_UNSUBSCRIBE",
+        "entity_type": "subscriber",
+        "entity_id": 2,
+        "details": "{\"email\":\"anderson.alumnus@mcc.edu.in\"}",
+        "ip_address": "127.0.0.1",
+        "created_at": "2026-10-05T10:29:49.000Z"
+      },
+      {
+        "id": 44,
+        "user_id": 1,
+        "action": "POLL_CREATE",
+        "entity_type": "poll",
+        "entity_id": 1,
+        "details": "{\"question\":\"Should MCC reinstate the annual centenary broadsheet ball? (1791356619875)\",\"optionsCount\":4}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T07:03:39.000Z"
+      },
+      {
+        "id": 45,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T08:56:09.000Z"
+      },
+      {
+        "id": 46,
+        "user_id": null,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 3,
+        "details": "{\"email\":\"test.reporter.1791363369810@mcc.edu.in\",\"role\":\"reporter\",\"name\":\"Test Desk Correspondent\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T08:56:10.000Z"
+      },
+      {
+        "id": 47,
+        "user_id": null,
+        "action": "PROFILE_UPDATE",
+        "entity_type": "user",
+        "entity_id": 3,
+        "details": "{\"name\":\"Test Correspondent Updated\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T08:56:10.000Z"
+      },
+      {
+        "id": 48,
+        "user_id": null,
+        "action": "PASSWORD_CHANGE",
+        "entity_type": "user",
+        "entity_id": 3,
+        "details": "User successfully updated security password",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T08:56:11.000Z"
+      },
+      {
+        "id": 49,
+        "user_id": null,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 3,
+        "details": "{\"email\":\"test.reporter.1791363369810@mcc.edu.in\",\"role\":\"reporter\",\"name\":\"Test Correspondent Updated\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T08:56:11.000Z"
+      },
+      {
+        "id": 50,
+        "user_id": 1,
+        "action": "USER_DELETE",
+        "entity_type": "user",
+        "entity_id": 3,
+        "details": "{\"name\":\"Test Correspondent Updated\",\"email\":\"test.reporter.1791363369810@mcc.edu.in\",\"role\":\"reporter\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T08:56:12.000Z"
+      },
+      {
+        "id": 51,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T09:26:46.000Z"
+      },
+      {
+        "id": 52,
+        "user_id": null,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 4,
+        "details": "{\"email\":\"test.reporter.1791365206258@mcc.edu.in\",\"role\":\"reporter\",\"name\":\"Kanban Reporter Test\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T09:26:46.000Z"
+      },
+      {
+        "id": 53,
+        "user_id": null,
+        "action": "ARTICLE_AUTO_PUBLISH",
+        "entity_type": "article",
+        "entity_id": null,
+        "details": "Auto-published 1 scheduled dispatches",
+        "ip_address": null,
+        "created_at": "2026-10-07T09:26:46.000Z"
+      },
+      {
+        "id": 54,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T09:47:04.000Z"
+      },
+      {
+        "id": 55,
+        "user_id": 1,
+        "action": "ASSIGNMENT_CREATE",
+        "entity_type": "assignment",
+        "entity_id": 1,
+        "details": "{\"title\":\"Investigation: Anderson Hall Heritage Restoration Timeline\",\"assigned_to\":5}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T09:47:05.000Z"
+      },
+      {
+        "id": 56,
+        "user_id": null,
+        "action": "ASSIGNMENT_STATUS_UPDATE",
+        "entity_type": "assignment",
+        "entity_id": 1,
+        "details": "{\"title\":\"Investigation: Anderson Hall Heritage Restoration Timeline\",\"previous_status\":\"assigned\",\"new_status\":\"accepted\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T09:47:05.000Z"
+      },
+      {
+        "id": 57,
+        "user_id": null,
+        "action": "ASSIGNMENT_STATUS_UPDATE",
+        "entity_type": "assignment",
+        "entity_id": 1,
+        "details": "{\"title\":\"Investigation: Anderson Hall Heritage Restoration Timeline\",\"previous_status\":\"accepted\",\"new_status\":\"submitted\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T09:47:05.000Z"
+      },
+      {
+        "id": 58,
+        "user_id": 1,
+        "action": "ASSIGNMENT_STATUS_UPDATE",
+        "entity_type": "assignment",
+        "entity_id": 1,
+        "details": "{\"title\":\"Investigation: Anderson Hall Heritage Restoration Timeline\",\"previous_status\":\"submitted\",\"new_status\":\"completed\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T09:47:05.000Z"
+      },
+      {
+        "id": 59,
+        "user_id": null,
+        "action": "CONTACT_SUBMIT",
+        "entity_type": "contact_message",
+        "entity_id": 3,
+        "details": "{\"email\":\"kavitha.s@mcc.edu.in\",\"subject\":\"[Student Op-Ed Pitch] Biodiversity in the Tambaram Scrub Woodland\",\"category\":\"editorial_tip\"}",
+        "ip_address": "::1",
+        "created_at": "2026-10-07T10:03:24.000Z"
+      },
+      {
+        "id": 60,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "127.0.0.1",
+        "created_at": "2026-10-07T10:29:55.000Z"
+      },
+      {
+        "id": 62,
+        "user_id": null,
+        "action": "LOGS_PRUNED",
+        "entity_type": "system",
+        "entity_id": null,
+        "details": "Pruned 1 activity log rows older than 90 days",
+        "ip_address": null,
+        "created_at": "2026-10-07T10:29:55.000Z"
+      },
+      {
+        "id": 63,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "127.0.0.1",
+        "created_at": "2026-10-07T10:30:16.000Z"
+      },
+      {
+        "id": 64,
+        "user_id": 1,
+        "action": "LOGIN",
+        "entity_type": "user",
+        "entity_id": 1,
+        "details": "{\"email\":\"admin@mcc.edu.in\",\"role\":\"super_admin\",\"name\":\"MCC Super Admin\"}",
+        "ip_address": "127.0.0.1",
+        "created_at": "2026-10-07T10:31:39.000Z"
+      },
+      {
+        "id": 65,
+        "user_id": 1,
+        "action": "NEWSLETTER_DISPATCH",
+        "entity_type": "newsletter",
+        "entity_id": null,
+        "details": "{\"recipients_count\":0,\"articles_count\":2,\"circulars_count\":2}",
+        "ip_address": "127.0.0.1",
+        "created_at": "2026-10-07T10:31:39.000Z"
+      },
+      {
+        "id": 67,
+        "user_id": null,
+        "action": "LOGS_PRUNED",
+        "entity_type": "system",
+        "entity_id": null,
+        "details": "Pruned 1 activity log rows older than 90 days",
+        "ip_address": null,
+        "created_at": "2026-10-07T10:31:39.000Z"
+      }
+    ],
+    "subscribers": [],
+    "contact_messages": [
+      {
+        "id": 1,
+        "name": "Dr. Alexander Macphail",
+        "email": "alexander@mcc.edu.in",
+        "subject": "Historical Archive Research Contribution",
+        "category": "editorial_tip",
+        "message": "I have original photographs from the 1937 Tambaram campus dedication to share.",
+        "status": "in_progress",
+        "admin_notes": "Editorial board reached out to Dr. Macphail for digital scans.",
+        "ip_address": "::1",
+        "created_at": "2026-10-05T08:49:28.000Z",
+        "updated_at": "2026-10-05T08:49:28.000Z"
+      }
+    ],
+    "polls": [
+      {
+        "id": 1,
+        "question": "Should MCC reinstate the annual centenary broadsheet ball? (1791356619875)",
+        "options": [
+          "Strongly Agree",
+          "Agree",
+          "Indifferent",
+          "Disagree"
+        ],
+        "is_active": 1,
+        "created_at": "2026-10-07T07:03:39.000Z",
+        "expires_at": null
+      }
+    ],
+    "poll_votes": [
+      {
+        "id": 1,
+        "poll_id": 1,
+        "option_index": 0,
+        "ip_hash": "eff8e7ca506627fe15dda5e0e512fcaad70b6d520f37cc76597fdb4f2d83a1a3",
+        "created_at": "2026-10-07T07:03:39.000Z"
+      }
+    ],
+    "bookmarks": [],
+    "article_assignments": []
+  }
+}

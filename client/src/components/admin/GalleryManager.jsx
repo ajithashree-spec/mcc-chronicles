@@ -400,8 +400,7 @@ export default function GalleryManager() {
                     alt={item.title}
                     loading="lazy"
                     onError={(e) => {
-                      e.currentTarget.src =
-                        'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80';
+                      e.currentTarget.src = '/images/mcc-campus-hero.jpg';
                     }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />

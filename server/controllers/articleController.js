@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const sseService = require('../services/sseService');
 
 /**
  * Utility to convert text into URL slug.
@@ -342,12 +343,17 @@ async function createArticle(req, res, next) {
       cover_image,
       featured_image,
       category_id,
+      category,
+      category_name,
       department_id,
+      department,
+      department_slug,
       is_featured = false,
       is_breaking = false,
       status: requestedStatus,
       scheduled_at,
       contributors,
+      author_name,
     } = req.body;
 
     if (!title || !title.trim()) {
@@ -358,18 +364,76 @@ async function createArticle(req, res, next) {
       return res.status(400).json({ success: false, error: 'Article content is required' });
     }
 
-    if (!category_id) {
-      return res.status(400).json({ success: false, error: 'Category ID is required' });
+    // 1. Resolve Category ID (supports numeric ID, category slug, or name like 'Research', 'Academics')
+    let resolvedCategoryId = category_id ? parseInt(category_id, 10) : null;
+    const catInput = category || category_name;
+
+    if (!resolvedCategoryId && catInput) {
+      if (typeof catInput === 'number' || /^\d+$/.test(catInput)) {
+        resolvedCategoryId = parseInt(catInput, 10);
+      } else {
+        const catStr = String(catInput).trim();
+        const catSlug = slugify(catStr);
+        const [catRows] = await pool.query(
+          'SELECT id FROM categories WHERE LOWER(name) = ? OR slug = ? LIMIT 1',
+          [catStr.toLowerCase(), catSlug]
+        );
+        if (catRows.length > 0) {
+          resolvedCategoryId = catRows[0].id;
+        } else {
+          // If custom category name provided, insert it or fallback
+          try {
+            const [newCat] = await pool.query(
+              'INSERT INTO categories (name, slug, description) VALUES (?, ?, ?)',
+              [catStr, catSlug, `${catStr} Dispatches and Coverage`]
+            );
+            resolvedCategoryId = newCat.insertId;
+          } catch (insertCatErr) {
+            const [fallback] = await pool.query('SELECT id FROM categories LIMIT 1');
+            resolvedCategoryId = fallback[0]?.id || 1;
+          }
+        }
+      }
     }
 
-    const finalSummary = summary ? summary.trim() : (excerpt ? excerpt.trim() : null);
-    const finalCover = cover_image ? cover_image.trim() : (featured_image ? featured_image.trim() : null);
-    const finalDept = department_id || req.user.department_id || null;
+    if (!resolvedCategoryId) {
+      // Fallback to default first category if not specified
+      const [defaultCats] = await pool.query('SELECT id FROM categories ORDER BY id ASC LIMIT 1');
+      if (defaultCats.length > 0) {
+        resolvedCategoryId = defaultCats[0].id;
+      } else {
+        return res.status(400).json({ success: false, error: 'Category ID is required' });
+      }
+    }
+
+    // 2. Resolve Department ID (supports ID, code like 'CHEM-AID', or slug like 'chem-aid')
+    let resolvedDeptId = null;
+    const deptInput = department_id || department || department_slug;
+    if (deptInput) {
+      if (typeof deptInput === 'number' || /^\d+$/.test(deptInput)) {
+        resolvedDeptId = parseInt(deptInput, 10);
+      } else {
+        const deptStr = String(deptInput).trim().toLowerCase();
+        const [deptRows] = await pool.query(
+          'SELECT id FROM departments WHERE LOWER(code) = ? OR LOWER(name) = ? OR LOWER(name) LIKE ? LIMIT 1',
+          [deptStr, deptStr, `%${deptStr}%`]
+        );
+        if (deptRows.length > 0) {
+          resolvedDeptId = deptRows[0].id;
+        }
+      }
+    }
+
+    // Assign to selected department from dropdown, or fallback to user's assigned department
+    const finalDept = resolvedDeptId || req.user.department_id || null;
+
+    const finalSummary = (excerpt && excerpt.trim()) || (summary && summary.trim()) || null;
+    const finalCover = (cover_image && cover_image.trim()) || (featured_image && featured_image.trim()) || null;
     const authorId = req.user.id;
 
     // Workflow permissions for status (Task 94)
     const isEditorial = ['super_admin', 'editor'].includes(req.user.role);
-    let normalizedRequested = requestedStatus;
+    let normalizedRequested = requestedStatus ? String(requestedStatus).toLowerCase().trim() : null;
     if (normalizedRequested === 'under_review' || normalizedRequested === 'pending_review') {
       normalizedRequested = 'in_review';
     }
@@ -417,7 +481,7 @@ async function createArticle(req, res, next) {
         is_featured ? 1 : 0,
         is_breaking ? 1 : 0,
         authorId,
-        category_id,
+        resolvedCategoryId,
         finalDept,
         publishedAt,
       ]
@@ -443,15 +507,33 @@ async function createArticle(req, res, next) {
 
     const [createdRows] = await pool.query(
       `SELECT 
-         a.id, a.title, a.slug, a.summary, a.status, a.scheduled_at, a.is_featured,
-         a.is_breaking, a.views_count, a.published_at, a.created_at,
-         c.name AS category_name, d.name AS department_name
+         a.id, a.title, a.slug, a.summary, a.summary AS excerpt, a.content, a.cover_image,
+         a.status, a.scheduled_at, a.is_featured, a.is_breaking, a.views_count,
+         a.published_at, a.created_at, a.author_id,
+         COALESCE(?, u.name) AS author_name,
+         a.category_id, c.name AS category_name, c.slug AS category_slug,
+         a.department_id, d.name AS department_name, d.code AS department_code
        FROM articles a
        LEFT JOIN categories c ON a.category_id = c.id
        LEFT JOIN departments d ON a.department_id = d.id
+       LEFT JOIN users u ON a.author_id = u.id
        WHERE a.id = ? LIMIT 1`,
-      [result.insertId]
+      [author_name || null, result.insertId]
     );
+
+    if (finalStatus === 'published') {
+      try {
+        sseService.broadcast('dispatch:published', {
+          id: result.insertId,
+          title: createdRows[0]?.title || title.trim(),
+          slug: createdRows[0]?.slug,
+          category: createdRows[0]?.category_name || 'Gazette Dispatch',
+          published_at: createdRows[0]?.published_at || new Date().toISOString(),
+        });
+      } catch (sseErr) {
+        console.warn('Failed to broadcast new published dispatch via SSE:', sseErr.message);
+      }
+    }
 
     return res.status(201).json({
       success: true,
@@ -634,6 +716,20 @@ async function updateArticle(req, res, next) {
       [id]
     );
 
+    if (updatedStatus === 'published' && currentArticle.status !== 'published') {
+      try {
+        sseService.broadcast('dispatch:published', {
+          id: parseInt(id, 10),
+          title: updatedRows[0]?.title,
+          slug: updatedRows[0]?.slug,
+          category: updatedRows[0]?.category_name || 'Gazette Dispatch',
+          published_at: updatedRows[0]?.published_at || new Date().toISOString(),
+        });
+      } catch (sseErr) {
+        console.warn('Failed to broadcast updated published dispatch via SSE:', sseErr.message);
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Article updated successfully',
@@ -791,6 +887,20 @@ async function updateArticleStatus(req, res, next) {
        WHERE a.id = ? LIMIT 1`,
       [id]
     );
+
+    if (normalized === 'published') {
+      try {
+        sseService.broadcast('dispatch:published', {
+          id: parseInt(id, 10),
+          title: updatedRows[0]?.title,
+          slug: updatedRows[0]?.slug,
+          category: updatedRows[0]?.category_name || 'Gazette Dispatch',
+          published_at: updatedRows[0]?.published_at || new Date().toISOString(),
+        });
+      } catch (sseErr) {
+        console.warn('Failed to broadcast status-updated published dispatch via SSE:', sseErr.message);
+      }
+    }
 
     return res.status(200).json({
       success: true,

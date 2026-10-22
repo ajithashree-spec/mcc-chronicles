@@ -17,6 +17,14 @@
   html {
     scroll-behavior: smooth;
     background-color: #fbf9f4;
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  *, *:before, *:after {
+    box-sizing: inherit;
   }
 
   body {
@@ -25,6 +33,19 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    position: relative;
+  }
+
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
   h1, h2, h3, h4, h5, h6, .font-serif {
@@ -131,10 +152,10 @@
 }
 
 /* =========================================================================
-   TASK 56: Comprehensive Broadsheet Print Stylesheet
+   TASK 56 & 117: Comprehensive Broadsheet Print & PDF Stylesheet
    ========================================================================= */
 @media print {
-  /* Hide non-printable elements */
+  /* Hide non-printable elements, drawers, audio players, navigation */
   header,
   nav,
   footer,
@@ -143,8 +164,11 @@
   #comments,
   button,
   [role="progressbar"],
+  [role="dialog"],
   .fixed,
-  .sticky {
+  .sticky,
+  .reading-drawer,
+  .audio-player-bar {
     display: none !important;
   }
 
@@ -163,7 +187,7 @@
 
   /* Page setup with margins */
   @page {
-    margin: 1.8cm 1.5cm 1.8cm 1.5cm;
+    margin: 1.5cm 1.2cm 1.5cm 1.2cm;
     size: A4 portrait;
   }
 
@@ -179,13 +203,35 @@
     box-shadow: none !important;
   }
 
-  /* Show print-only header */
+  /* Show ornate vintage print broadsheet masthead */
   .print-only-header {
     display: block !important;
-    border-bottom: 2pt solid #000000;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    text-align: center;
+    border-top: 3pt double #000000 !important;
+    border-bottom: 3pt double #000000 !important;
+    margin-bottom: 1.25rem !important;
+    padding: 0.75rem 0 !important;
+    text-align: center !important;
+  }
+
+  /* 2-Column Vintage Broadsheet Prose Layout (Task 117) */
+  .broadsheet-prose {
+    column-count: 2 !important;
+    column-gap: 2rem !important;
+    column-rule: 1px solid #000000 !important;
+    text-align: justify !important;
+    hyphens: auto !important;
+    font-size: 10pt !important;
+    line-height: 1.45 !important;
+  }
+
+  .broadsheet-prose p {
+    margin-bottom: 0.75rem !important;
+    text-indent: 1.25rem !important;
+  }
+
+  .broadsheet-prose p:first-of-type,
+  .drop-cap {
+    text-indent: 0 !important;
   }
 
   /* Ensure media and figures do not break awkwardly */
@@ -210,3 +256,39 @@
     break-after: avoid;
   }
 }
+
+/* High-DPI & High-Definition Image Rendering Optimization */
+img {
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.hd-broadsheet-photo {
+  image-rendering: -webkit-optimize-contrast;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Custom Thin Scrollbar for Department Flyout */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(88, 26, 32, 0.4) rgba(197, 160, 89, 0.1);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(197, 160, 89, 0.08);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(88, 26, 32, 0.4);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(88, 26, 32, 0.75);
+}
+

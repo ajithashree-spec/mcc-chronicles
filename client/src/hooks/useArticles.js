@@ -30,8 +30,11 @@ export function useArticles(params = {}) {
       const parsedParams = JSON.parse(paramsKey);
       const res = await articleService.getArticles(parsedParams);
       if (isMountedRef.current) {
-        setArticles(Array.isArray(res.data) ? res.data : []);
-        setPagination(res.pagination || null);
+        const list = Array.isArray(res.data)
+          ? res.data
+          : (Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res) ? res : []));
+        setArticles(list);
+        setPagination(res.pagination || res.data?.pagination || null);
       }
     } catch (err) {
       if (isMountedRef.current) {

@@ -1,31 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Zap, Volume2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DEFAULT_BULLETINS = [
   {
     id: 'b-1',
-    text: 'DEEPWOODS 2026: Legendary Woods Stage lineup & festival volunteer enlistment announced.',
-    link: '/article/deepwoods-2026-registration-opens',
-    category: 'Cultural',
-  },
-  {
-    id: 'b-2',
-    text: 'CONTROLLER OF EXAMINATIONS: November 2026 End-Semester hall tickets portal active.',
+    text: 'OFFICIAL GAZETTE: Madras Christian College (Autonomous) — Institutional Circulars & Notices Desk.',
     link: '/circulars',
     category: 'Gazette',
   },
   {
-    id: 'b-3',
-    text: 'CENTENNIAL CONVOCATION: Anderson Quadrangle rehearsal protocol issued for Class of 2026 graduands.',
-    link: '/article/centennial-celebrations-anderson-quadrangle-research-grants',
-    category: 'Spotlight',
-  },
-  {
-    id: 'b-4',
-    text: 'BOTANY & RESEARCH: Rare native medicinal flora cataloged in Tambaram scrub woodland sanctuary.',
-    link: '/category/research',
-    category: 'Science',
+    id: 'b-2',
+    text: 'ACADEMIC REGISTRY: Official collegiate notices published across all 38 department bureaus.',
+    link: '/departments',
+    category: 'Academic',
   },
 ];
 

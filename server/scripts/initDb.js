@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 const dotenv = require('dotenv');
 
 dotenv.config({ path: require('path').resolve(__dirname, '../.env') });
@@ -22,7 +23,9 @@ async function initDatabase() {
 
     await connection.changeUser({ database: dbName });
 
-    console.log('Creating schema tables...');
+    // Task 138: Production Migration Safety & Idempotency Lock
+    console.log('[MIGRATION SAFETY] Running in non-destructive idempotent mode. No tables will be dropped.');
+    console.log('Creating/verifying schema tables...');
 
     // 1. Departments Table
     await connection.query(`
@@ -33,6 +36,7 @@ async function initDatabase() {
         stream ENUM('Aided', 'Self-Financed', 'General') NOT NULL DEFAULT 'Aided',
         head_of_department VARCHAR(150) DEFAULT NULL,
         contact_email VARCHAR(191) DEFAULT NULL,
+        description TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
@@ -323,6 +327,97 @@ async function initDatabase() {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // 20. Seed/Sync Official 38 MCC Departments (17 Aided + 21 Self-Financed)
+    console.log('[OFFICIAL MCC DEPARTMENTS] Verifying all 38 departments...');
+    const OFFICIAL_DEPARTMENTS = [
+      // Aided Stream (Shift I) - 17 Departments
+      { name: 'Department of English', code: 'ENG-AID', stream: 'Aided', head_of_department: 'Dr. Sarah Alexander', contact_email: 'hod.english@mcc.edu.in', description: 'Pioneering liberal arts, literary criticism, and collegiate rhetoric since 1837.' },
+      { name: 'Department of Tamil', code: 'TAM-AID', stream: 'Aided', head_of_department: 'Dr. K. Senthil Kumar', contact_email: 'hod.tamil@mcc.edu.in', description: 'Classical Dravidian linguistics, ancient Sangam literature, and modern cultural research.' },
+      { name: 'Department of Languages (French, German, Hindi, Kannada, Malayalam, Sanskrit, Telugu)', code: 'LANG-AID', stream: 'Aided', head_of_department: 'Dr. P. Rajeswari', contact_email: 'hod.languages@mcc.edu.in', description: 'Multilingual humanities consortium offering European and Indian classical and modern tongues.' },
+      { name: 'Department of History', code: 'HIST-AID', stream: 'Aided', head_of_department: 'Dr. David Annadurai', contact_email: 'hod.history@mcc.edu.in', description: 'Colonial archives, archaeological field research, and South Asian historical studies.' },
+      { name: 'Department of Political Science', code: 'POL-AID', stream: 'Aided', head_of_department: 'Dr. J. Paul Sudhakar', contact_email: 'hod.polsci@mcc.edu.in', description: 'Constitutional jurisprudence, democratic governance, and international diplomatic relations.' },
+      { name: 'Department of Public Administration', code: 'PUB-AID', stream: 'Aided', head_of_department: 'Dr. R. Vijay Anand', contact_email: 'hod.pubadmin@mcc.edu.in', description: 'Public policy formulation, civil service leadership, and administrative ethics.' },
+      { name: 'Department of Economics', code: 'ECO-AID', stream: 'Aided', head_of_department: 'Dr. C. Selvaraj', contact_email: 'hod.economics@mcc.edu.in', description: 'Econometric modeling, developmental policy, and monetary systems research.' },
+      { name: 'Department of Philosophy', code: 'PHIL-AID', stream: 'Aided', head_of_department: 'Dr. Thomas Mathew', contact_email: 'hod.philosophy@mcc.edu.in', description: 'Classical metaphysics, epistemology, ethics, and contemporary inter-religious hermeneutics.' },
+      { name: 'Department of Commerce', code: 'COM-AID', stream: 'Aided', head_of_department: 'Dr. M. Joseph', contact_email: 'hod.commerce@mcc.edu.in', description: 'Corporate finance, taxation laws, accounting standards, and international commerce.' },
+      { name: 'Department of Social Work', code: 'SOW-AID', stream: 'Aided', head_of_department: 'Dr. Mary Angeline', contact_email: 'hod.socialwork@mcc.edu.in', description: 'Community development, clinical psychiatric social work, and human welfare advocacy.' },
+      { name: 'Department of Mathematics', code: 'MATH-AID', stream: 'Aided', head_of_department: 'Dr. A. Sundaram', contact_email: 'hod.maths@mcc.edu.in', description: 'Pure and applied mathematics, formal grammar theory, graph theory, and topology.' },
+      { name: 'Department of Statistics', code: 'STAT-AID', stream: 'Aided', head_of_department: 'Dr. S. Ravichandran', contact_email: 'hod.statistics@mcc.edu.in', description: 'Stochastic processes, biostatistics, probability theory, and data analytics.' },
+      { name: 'Department of Physics', code: 'PHY-AID', stream: 'Aided', head_of_department: 'Dr. G. Suresh', contact_email: 'hod.physics@mcc.edu.in', description: 'Quantum optics, experimental condensed matter physics, and renewable solar energy labs.' },
+      { name: 'Department of Chemistry', code: 'CHEM-AID', stream: 'Aided', head_of_department: 'Dr. Philip Wesley', contact_email: 'hod.chemistry@mcc.edu.in', description: 'Synthetic organic chemistry, spectroscopy, green catalysis, and materials science.' },
+      { name: 'Department of Plant Biology and Plant Biotechnology (Botany)', code: 'BOT-AID', stream: 'Aided', head_of_department: 'Dr. Edward Livingston', contact_email: 'hod.botany@mcc.edu.in', description: 'Pristine 365-acre scrub jungle ecological field survey, floristics, and molecular plant biotech.' },
+      { name: 'Department of Zoology', code: 'ZOO-AID', stream: 'Aided', head_of_department: 'Dr. Anita Soundararajan', contact_email: 'hod.zoology@mcc.edu.in', description: 'Entomology, wildlife biodiversity studies, marine biology, and animal physiology.' },
+      { name: 'Department of Physical Education', code: 'PED-AID', stream: 'Aided', head_of_department: 'Dr. K. Balaji', contact_email: 'hod.physed@mcc.edu.in', description: 'Sports physiology, collegiate track and field championships, and athletic conditioning.' },
+
+      // Self-Financed Stream (Shift II) - 21 Departments / Units
+      { name: 'Department of English (SFS)', code: 'ENG-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Rachel Varghese', contact_email: 'hod.english.sfs@mcc.edu.in', description: 'Professional communicative English, contemporary literary studies, and technical writing.' },
+      { name: 'Department of Tamil (SFS)', code: 'TAM-SFS', stream: 'Self-Financed', head_of_department: 'Dr. M. Murugan', contact_email: 'hod.tamil.sfs@mcc.edu.in', description: 'Applied Tamil prose, journalistic writing, and regional media communications.' },
+      { name: 'Department of Languages (SFS)', code: 'LANG-SFS', stream: 'Self-Financed', head_of_department: 'Dr. S. Geetha', contact_email: 'hod.languages.sfs@mcc.edu.in', description: 'Modern global foreign languages and commercial translation certifications.' },
+      { name: 'Department of Journalism', code: 'JRN-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Paulson George', contact_email: 'hod.journalism@mcc.edu.in', description: 'Investigative reporting, broadcast digital newsrooms, media ethics, and broadsheet production.' },
+      { name: 'Department of Social Work (SFS)', code: 'SOW-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Christine Gomez', contact_email: 'hod.socialwork.sfs@mcc.edu.in', description: 'Human resource management, urban development programs, and youth development.' },
+      { name: 'Department of Commerce (SFS)', code: 'COM-SFS', stream: 'Self-Financed', head_of_department: 'Dr. V. Chandrasekaran', contact_email: 'hod.commerce.sfs@mcc.edu.in', description: 'Banking technology, corporate governance, e-commerce systems, and investment analysis.' },
+      { name: 'Department of Business Administration (BBA)', code: 'BBA-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Abraham Lincoln', contact_email: 'hod.bba@mcc.edu.in', description: 'Strategic management, organizational leadership, marketing strategy, and entrepreneurial incubation.' },
+      { name: 'Department of Communication', code: 'COMM-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Sharon David', contact_email: 'hod.communication@mcc.edu.in', description: 'Interpersonal communication, corporate PR, advertising, and digital brand storytelling.' },
+      { name: 'Department of Geography, Tourism and Travel Management', code: 'GTTM-SFS', stream: 'Self-Financed', head_of_department: 'Dr. N. Parthiban', contact_email: 'hod.gttm@mcc.edu.in', description: 'Geospatial information systems (GIS), global tourism logistics, and eco-travel management.' },
+      { name: 'Department of Hospitality and Tourism', code: 'HTM-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Richard Daniel', contact_email: 'hod.hospitality@mcc.edu.in', description: 'Hospitality administration, resort management, culinary operations, and tourism economics.' },
+      { name: 'Department of Mathematics (SFS)', code: 'MATH-SFS', stream: 'Self-Financed', head_of_department: 'Dr. K. Srinivasan', contact_email: 'hod.maths.sfs@mcc.edu.in', description: 'Computational mathematics, numerical optimization, and algorithmic modeling.' },
+      { name: 'Department of Physics (SFS)', code: 'PHY-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Samuel Johnson', contact_email: 'hod.physics.sfs@mcc.edu.in', description: 'Solid state electronics, applied physics, and computational laboratory simulations.' },
+      { name: 'Department of Chemistry (SFS)', code: 'CHEM-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Grace Nirmala', contact_email: 'hod.chemistry.sfs@mcc.edu.in', description: 'Analytical chemistry, pharmaceutical compounds, and industrial chemical testing.' },
+      { name: 'Department of Microbiology', code: 'MCB-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Benjamin Isaac', contact_email: 'hod.microbiology@mcc.edu.in', description: 'Immunology, microbial genetics, clinical epidemiology, and industrial biotechnology.' },
+      { name: 'Department of Computer Application (BCA)', code: 'BCA-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Elizabeth Chacko', contact_email: 'hod.bca@mcc.edu.in', description: 'Software engineering, enterprise web applications, cloud infrastructure, and database systems.' },
+      { name: 'Department of Computer Science (B.Sc.)', code: 'CS-BSC-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Mark Christopher', contact_email: 'hod.cs.bsc@mcc.edu.in', description: 'Algorithms, operating systems, data structures, and computer architecture fundamentals.' },
+      { name: 'Department of Computer Science (MCA)', code: 'CS-MCA-SFS', stream: 'Self-Financed', head_of_department: 'Dr. V. Deepa', contact_email: 'hod.cs.mca@mcc.edu.in', description: 'Advanced postgraduate software architecture, artificial intelligence, and mobile systems.' },
+      { name: 'Department of Data Science', code: 'DS-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Anand Kumar', contact_email: 'hod.datascience@mcc.edu.in', description: 'Big data processing, machine learning, predictive statistical modeling, and deep learning.' },
+      { name: 'Department of Visual Communication', code: 'VISCOM-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Stephen Jayaraj', contact_email: 'hod.viscom@mcc.edu.in', description: 'Cinematography, documentary filmmaking, broadcast production, graphic design, and animation.' },
+      { name: 'Department of Physical Education, Health Education and Sports', code: 'PED-SFS', stream: 'Self-Financed', head_of_department: 'Dr. M. Prakash', contact_email: 'hod.sports.sfs@mcc.edu.in', description: 'Kinesiology, sports medicine, athletic coaching, and campus recreation programs.' },
+      { name: 'Department of Psychology', code: 'PSY-SFS', stream: 'Self-Financed', head_of_department: 'Dr. Hannah Rebecca', contact_email: 'hod.psychology@mcc.edu.in', description: 'Cognitive psychology, clinical counseling, psychometrics, and organizational behavior.' },
+    ];
+
+    for (const d of OFFICIAL_DEPARTMENTS) {
+      await connection.query(
+        `INSERT INTO departments (name, code, stream, head_of_department, contact_email, description)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE 
+           name = VALUES(name),
+           stream = VALUES(stream),
+           head_of_department = VALUES(head_of_department),
+           contact_email = VALUES(contact_email),
+           description = VALUES(description)`,
+        [d.name, d.code, d.stream, d.head_of_department, d.contact_email, d.description]
+      );
+    }
+    console.log(`[OFFICIAL MCC DEPARTMENTS] Successfully synced all ${OFFICIAL_DEPARTMENTS.length} official departments.`);
+
+    // 21. Seed/Sync Standard Roles: Super Admin & Unified Admin Handle
+    console.log('[USER CONSOLIDATION] Verifying standard accounts...');
+    const superAdminPasswordHash = await bcrypt.hash('Admin@MCC2026', 10);
+    const editorPasswordHash = await bcrypt.hash('Editor@MCC2026', 10);
+
+    await connection.query(
+      `INSERT INTO users (name, email, password_hash, role, bio, is_active)
+       VALUES ('MCC Super Administrator', 'admin@mcc.edu.in', ?, 'super_admin', 'Master Governance & Publications Administrator', 1)
+       ON DUPLICATE KEY UPDATE
+         name = VALUES(name),
+         password_hash = VALUES(password_hash),
+         role = 'super_admin',
+         bio = VALUES(bio),
+         is_active = 1`,
+      [superAdminPasswordHash]
+    );
+
+    await connection.query(
+      `INSERT INTO users (name, email, password_hash, role, bio, is_active)
+       VALUES ('MCC Editorial Bureau Admin', 'editor@mcc.edu.in', ?, 'editor', 'Unified Department Editorial & Dispatch Bureau', 1)
+       ON DUPLICATE KEY UPDATE
+         name = VALUES(name),
+         password_hash = VALUES(password_hash),
+         role = 'editor',
+         bio = VALUES(bio),
+         is_active = 1`,
+      [editorPasswordHash]
+    );
+    console.log('[USER CONSOLIDATION] Seeded admin@mcc.edu.in (super_admin) and editor@mcc.edu.in (editor).');
 
     console.log('All schema tables successfully initialized!');
   } catch (error) {

@@ -1,13 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Bookmark, Share2, Clock, Calendar, User } from 'lucide-react';
+import { Share2, Clock, Calendar, User } from 'lucide-react';
 
 /**
  * Normalizes cover image URLs to support both external and local uploads.
  */
 function getMediaUrl(url) {
-  if (!url) {
-    return 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200';
+  if (!url || url.includes('unsplash.com')) {
+    return '/images/mcc-campus-hero.jpg';
+  }
+  if (url.startsWith('/images/')) {
+    return url;
   }
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;

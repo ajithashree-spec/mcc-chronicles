@@ -1,50 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   Search,
   Menu,
   X,
-  LogIn,
   LayoutDashboard,
-  Sun,
-  BookOpen,
-  Newspaper,
   Calendar,
-  ExternalLink,
+  ChevronDown,
   ChevronRight,
-  Bookmark,
 } from 'lucide-react';
 import SearchModal from '../search/SearchModal';
-import ReadingListDrawer from '../common/ReadingListDrawer';
-import { useReadingList } from '../../hooks/useReadingList';
+import articleService from '../../services/articleService';
 
-const NAV_ITEMS = [
-  { name: 'Home', path: '/' },
-  { name: 'Campus News', path: '/category/campus-news' },
-  { name: 'Academics', path: '/category/academics' },
-  { name: 'DeepWoods & Cultural', path: '/category/deepwoods-cultural' },
-  { name: 'Sports', path: '/category/sports' },
-  { name: 'Research', path: '/category/research' },
-  { name: 'Departments', path: '/departments' },
-  { name: 'Galleries', path: '/gallery' },
-  { name: 'Circulars', path: '/circulars' },
+// Fallback Authentic 17 Aided Stream Departments (Shift I)
+const AIDED_DEPARTMENTS_STATIC = [
+  { name: 'English', code: 'ENG-AID', slug: 'eng-aid' },
+  { name: 'Tamil', code: 'TAM-AID', slug: 'tam-aid' },
+  { name: 'Languages', code: 'LANG-AID', slug: 'lang-aid' },
+  { name: 'History', code: 'HIST-AID', slug: 'hist-aid' },
+  { name: 'Political Science', code: 'POL-AID', slug: 'pol-aid' },
+  { name: 'Public Administration', code: 'PUB-AID', slug: 'pub-aid' },
+  { name: 'Economics', code: 'ECO-AID', slug: 'eco-aid' },
+  { name: 'Philosophy', code: 'PHIL-AID', slug: 'phil-aid' },
+  { name: 'Commerce', code: 'COM-AID', slug: 'com-aid' },
+  { name: 'Social Work', code: 'SOW-AID', slug: 'sow-aid' },
+  { name: 'Mathematics', code: 'MATH-AID', slug: 'math-aid' },
+  { name: 'Statistics', code: 'STAT-AID', slug: 'stat-aid' },
+  { name: 'Physics', code: 'PHY-AID', slug: 'phy-aid' },
+  { name: 'Chemistry', code: 'CHEM-AID', slug: 'chem-aid' },
+  { name: 'Plant Biology & Plant Biotechnology', code: 'BOT-AID', slug: 'bot-aid' },
+  { name: 'Zoology', code: 'ZOO-AID', slug: 'zoo-aid' },
+  { name: 'Physical Education', code: 'PED-AID', slug: 'ped-aid' },
+];
+
+// Fallback Authentic 21 Self-Financed Stream Departments (Shift II)
+const SFS_DEPARTMENTS_STATIC = [
+  { name: 'English (SFS)', code: 'ENG-SFS', slug: 'eng-sfs' },
+  { name: 'Tamil (SFS)', code: 'TAM-SFS', slug: 'tam-sfs' },
+  { name: 'Languages (SFS)', code: 'LANG-SFS', slug: 'lang-sfs' },
+  { name: 'Journalism', code: 'JRN-SFS', slug: 'jrn-sfs' },
+  { name: 'Social Work (SFS)', code: 'SOW-SFS', slug: 'sow-sfs' },
+  { name: 'Commerce (SFS)', code: 'COM-SFS', slug: 'com-sfs' },
+  { name: 'Business Administration (BBA)', code: 'BBA-SFS', slug: 'bba-sfs' },
+  { name: 'Communication', code: 'COMM-SFS', slug: 'comm-sfs' },
+  { name: 'Geography Tourism & Travel Management', code: 'GTTM-SFS', slug: 'gttm-sfs' },
+  { name: 'Hospitality & Tourism', code: 'HTM-SFS', slug: 'htm-sfs' },
+  { name: 'Mathematics (SFS)', code: 'MATH-SFS', slug: 'math-sfs' },
+  { name: 'Physics (SFS)', code: 'PHY-SFS', slug: 'phy-sfs' },
+  { name: 'Chemistry (SFS)', code: 'CHEM-SFS', slug: 'chem-sfs' },
+  { name: 'Microbiology', code: 'MCB-SFS', slug: 'mcb-sfs' },
+  { name: 'Computer Application (BCA)', code: 'BCA-SFS', slug: 'bca-sfs' },
+  { name: 'Computer Science (B.Sc.)', code: 'CS-BSC-SFS', slug: 'cs-bsc-sfs' },
+  { name: 'Computer Science (MCA)', code: 'CS-MCA-SFS', slug: 'cs-mca-sfs' },
+  { name: 'Data Science', code: 'DS-SFS', slug: 'ds-sfs' },
+  { name: 'Visual Communication', code: 'VISCOM-SFS', slug: 'viscom-sfs' },
+  { name: 'Physical Education Health Education & Sports', code: 'PED-SFS', slug: 'ped-sfs' },
+  { name: 'Psychology', code: 'PSY-SFS', slug: 'psy-sfs' },
 ];
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [readingListOpen, setReadingListOpen] = useState(false);
-  const { count: readingListCount } = useReadingList();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+
+  // Multi-tier Desktop Dropdown state
+  const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
+  const [activeStream, setActiveStream] = useState(null); // 'aided' | 'sfs' | null
+  const deptRef = useRef(null);
+  const dropdownTimeoutRef = useRef(null);
+
+  // Mobile Accordion state
+  const [mobileDeptOpen, setMobileDeptOpen] = useState(false);
+  const [mobileAidedOpen, setMobileAidedOpen] = useState(false);
+  const [mobileSfsOpen, setMobileSfsOpen] = useState(false);
+
+  // Dynamic Departments from backend
+  const [dbAided, setDbAided] = useState([]);
+  const [dbSfs, setDbSfs] = useState([]);
+
+  // Accessibility Font Size Toggle
+  const [largeText, setLargeText] = useState(false);
 
   // Dynamic formatted date
   const [currentDateStr, setCurrentDateStr] = useState('');
-  const [largeText, setLargeText] = useState(false);
 
   useEffect(() => {
     if (largeText) {
@@ -63,66 +103,141 @@ export default function Navbar() {
       day: 'numeric',
     });
     setCurrentDateStr(formatted);
-
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 120);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
+  // Fetch departments dynamically from API
+  useEffect(() => {
+    let isMounted = true;
+    articleService
+      .getDepartments()
+      .then((res) => {
+        if (!isMounted) return;
+        const list = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+          ? res.data
+          : [];
+        if (list.length > 0) {
+          const aided = list.filter((d) => d.stream === 'Aided');
+          const sfs = list.filter((d) => d.stream === 'Self-Financed');
+          if (aided.length > 0) setDbAided(aided);
+          if (sfs.length > 0) setDbSfs(sfs);
+        }
+      })
+      .catch((err) => {
+        console.warn('Departments live fetch fallback:', err.message);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Close menus on route change
   useEffect(() => {
     setMobileMenuOpen(false);
-    setSearchOpen(false);
+    setDeptDropdownOpen(false);
+    setActiveStream(null);
   }, [location.pathname]);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchOpen(false);
-      setSearchQuery('');
+  // Handle click outside and Escape key to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (deptRef.current && !deptRef.current.contains(event.target)) {
+        setDeptDropdownOpen(false);
+        setActiveStream(null);
+      }
     }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setDeptDropdownOpen(false);
+        setActiveStream(null);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // Dropdown hover handling with grace debounce
+  const handleDropdownEnter = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+    }
+    setDeptDropdownOpen(true);
   };
 
+  const handleDropdownLeave = () => {
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setDeptDropdownOpen(false);
+      setActiveStream(null);
+    }, 180);
+  };
+
+  // Compile final departments lists
+  const aidedList =
+    dbAided.length > 0
+      ? dbAided.map((d) => ({
+          name: d.name.replace(/^Department of\s+/i, ''),
+          code: d.code,
+          slug: (d.code || d.name).toLowerCase().replace(/[\s()&,]+/g, '-'),
+          id: d.id,
+        }))
+      : AIDED_DEPARTMENTS_STATIC;
+
+  const sfsList =
+    dbSfs.length > 0
+      ? dbSfs.map((d) => ({
+          name: d.name.replace(/^Department of\s+/i, ''),
+          code: d.code,
+          slug: (d.code || d.name).toLowerCase().replace(/[\s()&,]+/g, '-'),
+          id: d.id,
+        }))
+      : SFS_DEPARTMENTS_STATIC;
+
   return (
-    <header className="w-full bg-mcc-paper border-b border-mcc-maroon/20 text-gray-900">
-      {/* 1. TOP THIN TICKER / INSTITUTIONAL DATE BAR */}
-      <div className="border-b border-mcc-maroon/15 bg-mcc-halfwhite/60 text-xs py-1.5 px-4 sm:px-6 lg:px-8">
+    <header className="w-full sticky top-0 z-50 shadow-md">
+      {/* 1. SLIM INSTITUTIONAL UTILITY BAR (Dark Midnight Navy #0F2537, Strictly Read-Only) */}
+      <div className="bg-[#0F2537] border-b border-[#C5A059]/30 text-xs py-1.5 px-4 sm:px-6 lg:px-8 font-sans">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          {/* Left: Live Edition & Heritage Badge */}
-          <div className="flex items-center gap-3 font-medium text-gray-600">
-            <span className="flex items-center gap-1.5 text-mcc-maroon font-semibold uppercase tracking-wider">
-              <Calendar className="w-3.5 h-3.5 text-mcc-gold" />
-              {currentDateStr || 'Monday, October 5, 2026'}
+          {/* Left: Date & Accreditation */}
+          <div className="flex items-center gap-3 text-[#FAF8F5] text-[11px]">
+            <span className="flex items-center gap-1.5 text-[#FAF8F5] font-semibold uppercase tracking-wider">
+              <Calendar className="w-3.5 h-3.5 text-[#C5A059]" />
+              {currentDateStr || 'Wednesday, October 14, 2026'}
             </span>
-            <span className="hidden md:inline-block text-gray-300">•</span>
-            <span className="hidden md:inline text-gray-600 tracking-wide">
-              The Official Campus Journal of Madras Christian College (Autonomous) • Est. 1837
+            <span className="hidden md:inline text-[#C5A059]">•</span>
+            <span className="hidden md:inline text-[#FAF8F5]/80 font-medium">
+              Autonomous Institution &bull; Affiliated to University of Madras &bull; NAAC A++
             </span>
           </div>
 
-          {/* Right: Quick Links & Weather */}
-          <div className="flex items-center gap-4 text-gray-600">
-            <div className="hidden sm:flex items-center gap-1.5 text-gray-600">
-              <Sun className="w-3.5 h-3.5 text-mcc-gold" />
-              <span>Tambaram 31°C • Fair</span>
-            </div>
-            <span className="hidden sm:inline-block text-gray-300">•</span>
+          {/* Right: Circulars & Accessibility */}
+          <div className="flex items-center gap-3 text-[11px] text-[#FAF8F5]">
+            <Link
+              to="/circulars"
+              className="text-[#FAF8F5] hover:text-[#C5A059] transition-colors font-medium hidden sm:inline"
+            >
+              Circulars
+            </Link>
 
             {/* Accessibility Font Size Toggle */}
             <div
-              className="flex items-center gap-0.5 border border-gray-300 rounded px-1 py-0.5 text-[11px] font-serif bg-white shadow-2xs"
+              className="flex items-center gap-0.5 border border-[#C5A059]/40 rounded px-1 py-0.5 text-[10px] font-serif bg-[#0A1926] shadow-2xs ml-1"
               title="Adjust Reader Text Size"
             >
               <button
                 type="button"
                 onClick={() => setLargeText(false)}
-                className={`px-1.5 py-0.5 rounded transition-colors ${
+                className={`px-1.5 py-0.2 rounded transition-colors ${
                   !largeText
-                    ? 'bg-mcc-maroon text-white font-bold'
-                    : 'text-gray-600 hover:text-mcc-maroon'
+                    ? 'bg-[#C5A059] text-[#0F2537] font-bold'
+                    : 'text-[#FAF8F5]/80 hover:text-[#C5A059]'
                 }`}
                 title="Standard Text Size"
               >
@@ -131,243 +246,429 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setLargeText(true)}
-                className={`px-1.5 py-0.5 rounded transition-colors ${
+                className={`px-1.5 py-0.2 rounded transition-colors ${
                   largeText
-                    ? 'bg-mcc-maroon text-white font-bold'
-                    : 'text-gray-600 hover:text-mcc-maroon'
+                    ? 'bg-[#C5A059] text-[#0F2537] font-bold'
+                    : 'text-[#FAF8F5]/80 hover:text-[#C5A059]'
                 }`}
                 title="Large Text Size"
               >
                 A+
               </button>
             </div>
-            <span className="text-gray-300">•</span>
 
-            <Link
-              to="/circulars"
-              className="hover:text-mcc-maroon transition-colors font-medium"
-            >
-              Circulars
-            </Link>
-            <span className="text-gray-300">•</span>
-            {isAuthenticated() ? (
-              <Link
-                to="/dashboard"
-                className="flex items-center gap-1.5 text-mcc-maroon font-semibold hover:text-mcc-maroon-dark transition-colors"
-              >
-                <LayoutDashboard className="w-3.5 h-3.5 text-mcc-gold" />
-                <span>Dashboard ({user?.name ? user.name.split(' ')[0] : 'Desk'})</span>
-              </Link>
-            ) : (
-              <Link
-                to="/login"
-                className="flex items-center gap-1 text-mcc-maroon font-semibold hover:text-mcc-maroon-dark transition-colors"
-              >
-                <LogIn className="w-3 h-3 text-mcc-gold" />
-                <span>Staff Login</span>
-              </Link>
+            {/* Authenticated Staff Indicator (ONLY visible if session already authenticated; zero login CTAs exposed publicly) */}
+            {isAuthenticated() && (
+              <>
+                <span className="text-[#C5A059]">•</span>
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-1 px-2 py-0.5 bg-[#C5A059]/20 text-[#C5A059] border border-[#C5A059]/40 font-semibold rounded hover:bg-[#C5A059] hover:text-[#0F2537] transition-colors"
+                  title="Editorial Dashboard"
+                >
+                  <LayoutDashboard className="w-3 h-3 text-[#C5A059]" />
+                  <span>Dashboard ({user?.name ? user.name.split(' ')[0] : 'Staff'})</span>
+                </Link>
+              </>
             )}
           </div>
         </div>
       </div>
 
-      {/* 2. GRAND BROADSHEET MASTHEAD */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-center relative">
-        <div className="flex flex-col items-center justify-center">
-          {/* Top Heritage Crest & Vol/Issue Subhead */}
-          <div className="w-full flex items-center justify-between text-[11px] font-serif uppercase tracking-widest text-gray-500 border-b border-mcc-maroon/20 pb-2 mb-4">
-            <span className="hidden sm:inline">Vol. CLXXXVII • No. 42</span>
-            <span className="mx-auto sm:mx-0 font-medium tracking-[0.2em] text-mcc-maroon">
-              Lighted to Lighten • Founded in 1837
-            </span>
-            <span className="hidden sm:inline">Chennai Gazette Edition</span>
-          </div>
+      {/* 2. SOLID DEEP INSTITUTIONAL MAROON HEADER BAR (#581A20 + Gold Band) */}
+      <div className="bg-[#581A20] border-b-4 border-[#C5A059] shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            {/* LEFT: MCC Crest & Institutional Brand Title */}
+            <Link
+              to="/"
+              className="group flex items-center gap-3 shrink-0 py-1"
+              title="Madras Christian College - Campus News Portal"
+            >
+              <img
+                src="/assets/mcc-crest.png"
+                alt="Madras Christian College Crest"
+                className="h-11 sm:h-13 w-auto object-contain transition-transform duration-300 group-hover:scale-105 filter drop-shadow-sm brightness-105"
+              />
+              <div className="flex flex-col justify-center">
+                <span className="font-serif font-bold text-xl sm:text-2xl text-[#FAF8F5] tracking-tight leading-none group-hover:text-[#C5A059] transition-colors">
+                  Madras Christian College
+                </span>
+                <span className="text-[10px] sm:text-[11px] font-sans font-bold tracking-[0.25em] text-[#C5A059] uppercase block mt-1">
+                  CAMPUS NEWS PORTAL
+                </span>
+              </div>
+            </Link>
 
-          {/* Main Ornate Masthead Brand */}
-          <Link
-            to="/"
-            className="group flex flex-col sm:flex-row items-center justify-center gap-4 my-2 text-center"
-          >
-            <img
-              src="/assets/mcc-crest.png"
-              alt="Madras Christian College Crest"
-              className="h-16 sm:h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-            />
-            <div className="text-center sm:text-left">
-              <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif font-black tracking-tight text-mcc-maroon drop-shadow-sm uppercase">
-                The MCC Chronicles
-              </h1>
-              <p className="text-xs sm:text-sm font-serif tracking-[0.25em] text-mcc-navy uppercase font-semibold mt-1">
-                Truth • Freedom • Excellence | Tambaram, Chennai
-              </p>
-            </div>
-          </Link>
+            {/* CENTER: SIMPLIFIED 3-ITEM PRIMARY NAVIGATION (Desktop) */}
+            <nav className="hidden md:flex items-center space-x-1 lg:space-x-4">
+              {/* 1. Home */}
+              <NavLink
+                to="/"
+                end
+                className={({ isActive }) =>
+                  `px-3 py-2 flex items-center gap-1.5 font-sans font-semibold text-xs sm:text-sm tracking-wider uppercase transition-colors duration-150 ${
+                    isActive
+                      ? 'text-[#C5A059] border-b-2 border-[#C5A059] font-bold'
+                      : 'text-[#FAF8F5]/90 hover:text-[#C5A059]'
+                  }`
+                }
+              >
+                Home
+              </NavLink>
 
-          {/* Double Hairline Broadsheet Rule */}
-          <div className="w-full mt-4 border-t border-b-2 border-mcc-maroon/25 py-0.5">
-            <div className="flex justify-between items-center text-[10px] uppercase tracking-[0.2em] text-gray-600 px-2 py-0.5">
-              <span>Autonomous Institution Affiliated to the University of Madras</span>
-              <span className="hidden md:inline">NAAC A++ Grade Re-Accredited</span>
-              <span>Tambaram East, Chennai - 600059</span>
+              {/* 2. Campus News */}
+              <NavLink
+                to="/news"
+                className={({ isActive }) =>
+                  `px-3 py-2 flex items-center gap-1.5 font-sans font-semibold text-xs sm:text-sm tracking-wider uppercase transition-colors duration-150 ${
+                    isActive || location.pathname.startsWith('/category/campus-news')
+                      ? 'text-[#C5A059] border-b-2 border-[#C5A059] font-bold'
+                      : 'text-[#FAF8F5]/90 hover:text-[#C5A059]'
+                  }`
+                }
+              >
+                Campus News
+              </NavLink>
+
+              {/* 3. Departments (Interactive Multi-Tier Cascading Dropdown) */}
+              <div
+                className="relative"
+                ref={deptRef}
+                onMouseEnter={handleDropdownEnter}
+                onMouseLeave={handleDropdownLeave}
+              >
+                <button
+                  type="button"
+                  onClick={() => setDeptDropdownOpen((prev) => !prev)}
+                  className={`px-3 py-2 flex items-center gap-1.5 font-sans font-semibold text-xs sm:text-sm tracking-wider uppercase transition-colors duration-150 cursor-pointer ${
+                    deptDropdownOpen || location.pathname.startsWith('/departments')
+                      ? 'text-[#C5A059] border-b-2 border-[#C5A059] font-bold'
+                      : 'text-[#FAF8F5]/90 hover:text-[#C5A059]'
+                  }`}
+                  aria-expanded={deptDropdownOpen}
+                  aria-haspopup="true"
+                >
+                  <span>Departments</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      deptDropdownOpen ? 'rotate-180 text-[#C5A059]' : 'text-inherit'
+                    }`}
+                  />
+                </button>
+
+                {/* LEVEL 1 STREAM DROPDOWN (Cream Half-White Canvas, Double Gold Border, Z-50) */}
+                {deptDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 min-w-[260px] bg-[#FAF8F5] border-2 border-[#C5A059] shadow-2xl rounded-md z-50 p-2 font-serif text-xs animate-in fade-in zoom-in-95 duration-150 text-[#0F2537]">
+                    <div className="px-3 py-1.5 border-b border-[#C5A059]/30 text-[10px] font-sans font-bold uppercase tracking-wider text-[#581A20]">
+                      Academic Streams
+                    </div>
+
+                    {/* Aided Stream (Shift I) Option */}
+                    <div
+                      className="relative"
+                      onMouseEnter={() => setActiveStream('aided')}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setActiveStream((prev) => (prev === 'aided' ? null : 'aided'))}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-sm transition-colors duration-150 text-left group cursor-pointer ${
+                          activeStream === 'aided'
+                            ? 'bg-[#581A20] text-[#FAF8F5] font-bold shadow-xs'
+                            : 'text-[#0F2537] hover:bg-[#581A20] hover:text-[#FAF8F5]'
+                        }`}
+                      >
+                        <div>
+                          <span className="block font-bold text-xs">Aided Stream (Shift I)</span>
+                          <span
+                            className={`text-[10px] font-sans block ${
+                              activeStream === 'aided' ? 'text-[#C5A059]' : 'text-gray-500 group-hover:text-[#FAF8F5]/80'
+                            }`}
+                          >
+                            17 Academic Departments
+                          </span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 opacity-75" />
+                      </button>
+
+                      {/* LEVEL 2 FLYOUT: AIDED SUB-MENU (17 Departments) */}
+                      {activeStream === 'aided' && (
+                        <div className="absolute left-full top-0 ml-1 w-80 sm:w-88 max-h-[70vh] bg-[#FAF8F5] border-2 border-[#C5A059] shadow-2xl rounded-md p-2 z-50 animate-in fade-in slide-in-from-left-1 duration-150 text-[#0F2537]">
+                          <div className="pb-2 mb-2 border-b border-[#C5A059]/30 flex items-center justify-between px-1">
+                            <span className="font-bold text-[#581A20] text-xs uppercase tracking-wide">
+                              Aided Stream &bull; 17 Departments
+                            </span>
+                            <span className="text-[10px] font-sans bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">
+                              Shift I
+                            </span>
+                          </div>
+
+                          <div className="max-h-[65vh] overflow-y-auto scrollbar-thin space-y-0.5 pr-1">
+                            {aidedList.map((dept) => (
+                              <Link
+                                key={dept.slug}
+                                to={`/departments/${dept.slug}`}
+                                onClick={() => {
+                                  setDeptDropdownOpen(false);
+                                  setActiveStream(null);
+                                }}
+                                className="px-3 py-1.5 rounded text-xs font-semibold text-[#0F2537] hover:bg-[#581A20] hover:text-[#FAF8F5] transition-colors duration-150 flex items-center justify-between group"
+                              >
+                                <span className="truncate pr-2">
+                                  {dept.name}
+                                </span>
+                                <span className="font-mono text-[9px] text-[#C5A059] group-hover:text-[#FAF8F5] uppercase shrink-0">
+                                  {dept.code}
+                                </span>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Self-Financed Stream (Shift II) Option */}
+                    <div
+                      className="relative mt-1"
+                      onMouseEnter={() => setActiveStream('sfs')}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setActiveStream((prev) => (prev === 'sfs' ? null : 'sfs'))}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-sm transition-colors duration-150 text-left group cursor-pointer ${
+                          activeStream === 'sfs'
+                            ? 'bg-[#581A20] text-[#FAF8F5] font-bold shadow-xs'
+                            : 'text-[#0F2537] hover:bg-[#581A20] hover:text-[#FAF8F5]'
+                        }`}
+                      >
+                        <div>
+                          <span className="block font-bold text-xs">Self-Financed Stream (Shift II)</span>
+                          <span
+                            className={`text-[10px] font-sans block ${
+                              activeStream === 'sfs' ? 'text-[#C5A059]' : 'text-gray-500 group-hover:text-[#FAF8F5]/80'
+                            }`}
+                          >
+                            21 Academic Departments
+                          </span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 opacity-75" />
+                      </button>
+
+                      {/* LEVEL 2 FLYOUT: SELF-FINANCED SUB-MENU (21 Departments with smooth scrollbar-thin) */}
+                      {activeStream === 'sfs' && (
+                        <div className="absolute left-full top-0 ml-1 w-80 sm:w-96 max-h-[70vh] bg-[#FAF8F5] border-2 border-[#C5A059] shadow-2xl rounded-md p-2 z-50 animate-in fade-in slide-in-from-left-1 duration-150 text-[#0F2537]">
+                          <div className="pb-2 mb-2 border-b border-[#C5A059]/30 flex items-center justify-between px-1">
+                            <span className="font-bold text-[#581A20] text-xs uppercase tracking-wide">
+                              Self-Financed &bull; 21 Departments
+                            </span>
+                            <span className="text-[10px] font-sans bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-semibold">
+                              Shift II
+                            </span>
+                          </div>
+
+                          <div className="max-h-[65vh] overflow-y-auto scrollbar-thin space-y-0.5 pr-1">
+                            {sfsList.map((dept) => (
+                              <Link
+                                key={dept.slug}
+                                to={`/departments/${dept.slug}`}
+                                onClick={() => {
+                                  setDeptDropdownOpen(false);
+                                  setActiveStream(null);
+                                }}
+                                className="px-3 py-1.5 rounded text-xs font-semibold text-[#0F2537] hover:bg-[#581A20] hover:text-[#FAF8F5] transition-colors duration-150 flex items-center justify-between group"
+                              >
+                                <span className="truncate pr-2">
+                                  {dept.name}
+                                </span>
+                                <span className="font-mono text-[9px] text-[#C5A059] group-hover:text-[#FAF8F5] uppercase shrink-0">
+                                  {dept.code}
+                                </span>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* All Departments Directory Link */}
+                    <div className="mt-2 pt-2 border-t border-[#C5A059]/30">
+                      <Link
+                        to="/departments"
+                        onClick={() => {
+                          setDeptDropdownOpen(false);
+                          setActiveStream(null);
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#581A20] hover:bg-[#581A20] hover:text-[#FAF8F5] rounded transition-colors"
+                      >
+                        <span>All 38 Department Bureaus Directory</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </nav>
+
+            {/* RIGHT: Action Tools (Search Modal & Mobile Trigger) */}
+            <div className="flex items-center space-x-2">
+              {/* Search Trigger */}
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase font-semibold text-[#FAF8F5] hover:text-[#C5A059] hover:bg-black/20 border border-[#C5A059]/40 bg-[#0F2537]/70 rounded-md transition-colors"
+                aria-label="Search Dispatches"
+              >
+                <Search className="w-3.5 h-3.5 text-[#C5A059]" />
+                <span className="hidden sm:inline font-sans">Search</span>
+              </button>
+
+              {/* Mobile Hamburger Menu Button */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 rounded-md text-[#FAF8F5] hover:text-[#C5A059] hover:bg-black/20 focus:outline-none"
+                aria-label="Toggle Navigation Menu"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. STICKY CATEGORY NAVIGATION BAR */}
-      <nav
-        className={`sticky top-0 z-40 w-full transition-all duration-200 border-t border-b border-mcc-maroon/20 ${
-          isScrolled
-            ? 'bg-mcc-paper/95 backdrop-blur-md shadow-md py-2'
-            : 'bg-mcc-paper py-2.5'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Mobile Menu Button */}
-          <div className="flex items-center lg:hidden">
+      {/* 3. GLOBAL SEARCH MODAL */}
+      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* 5. MOBILE ACCORDION NAVIGATION DRAWER */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t-2 border-[#C5A059] bg-[#0F2537] px-4 pt-3 pb-6 space-y-2 shadow-2xl animate-in slide-in-from-top-2 max-w-full overflow-hidden text-[#FAF8F5]">
+          {/* Home */}
+          <NavLink
+            to="/"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `flex items-center justify-between px-3 py-2.5 text-sm font-serif font-bold rounded-md transition-colors ${
+                isActive
+                  ? 'bg-[#581A20] text-[#FAF8F5] border-l-4 border-[#C5A059]'
+                  : 'text-[#FAF8F5] hover:text-[#C5A059] hover:bg-white/5'
+              }`
+            }
+          >
+            <span>Home</span>
+            <ChevronRight className="w-4 h-4 opacity-75 text-[#C5A059]" />
+          </NavLink>
+
+          {/* Campus News */}
+          <NavLink
+            to="/news"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `flex items-center justify-between px-3 py-2.5 text-sm font-serif font-bold rounded-md transition-colors ${
+                isActive || location.pathname.startsWith('/category/campus-news')
+                  ? 'bg-[#581A20] text-[#FAF8F5] border-l-4 border-[#C5A059]'
+                  : 'text-[#FAF8F5] hover:text-[#C5A059] hover:bg-white/5'
+              }`
+            }
+          >
+            <span>Campus News</span>
+            <ChevronRight className="w-4 h-4 opacity-75 text-[#C5A059]" />
+          </NavLink>
+
+          {/* Departments Accordion */}
+          <div className="border border-[#C5A059]/40 rounded-md overflow-hidden bg-[#FAF8F5] text-[#0F2537]">
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-md text-mcc-maroon hover:bg-mcc-halfwhite focus:outline-none"
-              aria-label="Toggle Navigation Menu"
+              onClick={() => setMobileDeptOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-serif font-bold text-[#0F2537] bg-[#FAF8F5]"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-            <span className="ml-2 font-serif font-bold text-mcc-maroon lg:hidden text-lg">
-              Sections
-            </span>
-          </div>
-
-          {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center justify-center flex-1 space-x-1 xl:space-x-2">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === '/'}
-                className={({ isActive }) =>
-                  `px-3 py-1.5 text-xs xl:text-sm font-serif uppercase tracking-wider font-semibold transition-all relative ${
-                    isActive
-                      ? 'text-mcc-maroon font-bold'
-                      : 'text-gray-700 hover:text-mcc-maroon hover:bg-mcc-maroon/5 rounded'
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <span>{item.name}</span>
-                    {isActive && (
-                      <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-mcc-gold rounded-full" />
-                    )}
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </div>
-
-          {/* Action Buttons: Reading List & Search */}
-          <div className="flex items-center space-x-2">
-            <button
-              type="button"
-              onClick={() => setReadingListOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase font-semibold text-gray-700 hover:text-mcc-maroon hover:bg-mcc-halfwhite border border-mcc-maroon/20 rounded transition-colors relative"
-              aria-label="View Reading List"
-              title="My Broadsheet Reading List"
-            >
-              <Bookmark className={`w-3.5 h-3.5 ${readingListCount > 0 ? 'text-mcc-maroon fill-mcc-gold' : 'text-mcc-gold'}`} />
-              <span className="hidden sm:inline">Reading List</span>
-              {readingListCount > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-sans font-bold leading-none text-white bg-mcc-maroon rounded-full">
-                  {readingListCount}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                <span>Departments</span>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  mobileDeptOpen ? 'rotate-180 text-[#581A20]' : 'text-gray-400'
+                }`}
+              />
             </button>
 
-            <button
-              type="button"
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase font-semibold text-gray-700 hover:text-mcc-maroon hover:bg-mcc-halfwhite border border-mcc-maroon/20 rounded transition-colors"
-              aria-label="Search The MCC Chronicles"
-            >
-              <Search className="w-3.5 h-3.5 text-mcc-gold" />
-              <span className="hidden sm:inline">Search</span>
-            </button>
+            {mobileDeptOpen && (
+              <div className="p-2 space-y-2 border-t border-[#C5A059]/30 bg-[#FAF8F5]">
+                {/* Aided Stream Collapsible */}
+                <div className="border border-[#C5A059]/30 rounded-sm overflow-hidden bg-white">
+                  <button
+                    type="button"
+                    onClick={() => setMobileAidedOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-serif font-bold text-[#581A20] bg-emerald-50/50"
+                  >
+                    <span>Aided Stream (Shift I) &bull; 17 Depts</span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                        mobileAidedOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {mobileAidedOpen && (
+                    <div className="p-2 max-h-56 overflow-y-auto scrollbar-thin space-y-1 bg-white">
+                      {aidedList.map((dept) => (
+                        <Link
+                          key={dept.slug}
+                          to={`/departments/${dept.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block px-2.5 py-1 text-xs text-gray-800 hover:text-white hover:bg-[#581A20] rounded font-medium"
+                        >
+                          {dept.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Self-Financed Stream Collapsible */}
+                <div className="border border-[#C5A059]/30 rounded-sm overflow-hidden bg-white">
+                  <button
+                    type="button"
+                    onClick={() => setMobileSfsOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-serif font-bold text-[#0F2537] bg-purple-50/50"
+                  >
+                    <span>Self-Financed Stream (Shift II) &bull; 21 Depts</span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                        mobileSfsOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {mobileSfsOpen && (
+                    <div className="p-2 max-h-56 overflow-y-auto scrollbar-thin space-y-1 bg-white">
+                      {sfsList.map((dept) => (
+                        <Link
+                          key={dept.slug}
+                          to={`/departments/${dept.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block px-2.5 py-1 text-xs text-gray-800 hover:text-white hover:bg-[#581A20] rounded font-medium"
+                        >
+                          {dept.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* All Departments Link */}
+                <Link
+                  to="/departments"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-center py-2 text-xs font-serif font-bold text-[#581A20] bg-[#581A20]/10 rounded border border-[#581A20]/30 hover:bg-[#581A20] hover:text-white transition-colors"
+                >
+                  Browse All 38 Department Bureaus &rarr;
+                </Link>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* GLOBAL SEARCH MODAL */}
-        <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-
-        {/* READING LIST SLIDE-OVER DRAWER */}
-        <ReadingListDrawer isOpen={readingListOpen} onClose={() => setReadingListOpen(false)} />
-
-        {/* MOBILE NAVIGATION DRAWER */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-mcc-maroon/20 bg-mcc-paper px-4 pt-3 pb-6 space-y-1 shadow-lg animate-in slide-in-from-top-1">
-            <div className="pb-2 border-b border-mcc-maroon/10 mb-2">
-              <p className="text-xs font-serif font-bold text-mcc-maroon uppercase tracking-widest px-2">
-                All Departments & Desks
-              </p>
-            </div>
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === '/'}
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3 py-2 text-sm font-serif font-semibold rounded-md transition-colors ${
-                    isActive
-                      ? 'bg-mcc-maroon text-white'
-                      : 'text-gray-800 hover:bg-mcc-halfwhite hover:text-mcc-maroon'
-                  }`
-                }
-              >
-                <span>{item.name}</span>
-                <ChevronRight className="w-4 h-4 opacity-50" />
-              </NavLink>
-            ))}
-            <div className="pt-4 border-t border-mcc-maroon/15 mt-3 space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setReadingListOpen(true);
-                }}
-                className="flex items-center justify-between w-full px-3 py-2 text-sm font-serif font-semibold text-gray-800 hover:bg-mcc-halfwhite hover:text-mcc-maroon rounded-md border border-mcc-maroon/20"
-              >
-                <div className="flex items-center gap-2">
-                  <Bookmark className="w-4 h-4 text-mcc-gold" />
-                  <span>My Reading List</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full bg-mcc-maroon text-white text-xs font-sans">
-                  {readingListCount}
-                </span>
-              </button>
-
-              {isAuthenticated() ? (
-                <Link
-                  to="/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-mcc-maroon text-white font-medium text-xs uppercase tracking-wider rounded"
-                >
-                  <LayoutDashboard className="w-4 h-4 text-mcc-gold" />
-                  <span>Editorial Dashboard ({user?.name || user?.role})</span>
-                </Link>
-              ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-mcc-maroon text-white font-medium text-xs uppercase tracking-wider rounded"
-                >
-                  <LogIn className="w-4 h-4 text-mcc-gold" />
-                  <span>Editorial & Staff Portal</span>
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-      </nav>
+      )}
     </header>
   );
 }

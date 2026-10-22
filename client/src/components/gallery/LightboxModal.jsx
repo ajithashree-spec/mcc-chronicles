@@ -35,6 +35,8 @@ export default function LightboxModal({
   onSelectIndex,
 }) {
   const [copied, setCopied] = useState(false);
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
 
   const activePhoto = photos[currentIndex] || null;
   const total = photos.length;
@@ -50,6 +52,36 @@ export default function LightboxModal({
     const nextIdx = (currentIndex + 1) % total;
     onSelectIndex(nextIdx);
   }, [currentIndex, total, onSelectIndex]);
+
+  // Touch swipe handling for mobile devices
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = (e) => {
+    setTouchEndX(null);
+    if (e.targetTouches && e.targetTouches.length > 0) {
+      setTouchStartX(e.targetTouches[0].clientX);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.targetTouches && e.targetTouches.length > 0) {
+      setTouchEndX(e.targetTouches[0].clientX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX === null || touchEndX === null) return;
+    const distance = touchStartX - touchEndX;
+    if (distance > minSwipeDistance) {
+      // Swiped left -> next
+      handleNext();
+    } else if (distance < -minSwipeDistance) {
+      // Swiped right -> prev
+      handlePrev();
+    }
+    setTouchStartX(null);
+    setTouchEndX(null);
+  };
 
   // Keyboard navigation & body scroll lock
   useEffect(() => {
@@ -95,7 +127,10 @@ export default function LightboxModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex flex-col justify-between bg-black/95 backdrop-blur-md animate-in fade-in duration-200 select-none"
+      className="fixed inset-0 z-50 flex flex-col justify-between bg-black/95 backdrop-blur-md animate-in fade-in duration-200 select-none max-w-full overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -165,12 +200,15 @@ export default function LightboxModal({
           </button>
         )}
 
-        {/* IMAGE CONTAINER */}
-        <div className="max-w-5xl max-h-[75vh] flex items-center justify-center p-2">
+        {/* IMAGE CONTAINER WITH BROADSHEET PICTURE FRAME */}
+        <div className="p-1.5 bg-[#fbfaf8]/10 border border-white/20 shadow-2xl ring-1 ring-mcc-gold/30 rounded-xs max-w-5xl max-h-[75vh] flex items-center justify-center overflow-hidden">
           <img
             src={imageUrl}
             alt={activePhoto.title || 'Campus Photo'}
-            className="max-h-[72vh] max-w-full object-contain rounded shadow-2xl transition-all duration-300 animate-in zoom-in-95"
+            className="max-h-[72vh] max-w-full object-contain rounded-xs transition-all duration-300 animate-in zoom-in-95"
+            onError={(e) => {
+              e.currentTarget.src = '/images/campus/mcc-main-facade.jpg';
+            }}
           />
         </div>
 

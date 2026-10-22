@@ -15,6 +15,7 @@ import LightboxModal from '../components/gallery/LightboxModal';
 
 const EVENT_FILTERS = [
   { label: 'All Photos', value: 'all' },
+  { label: 'Campus Heritage & Architecture', value: 'Campus Heritage & Architecture' },
   { label: 'DeepWoods 2026', value: 'DeepWoods' },
   { label: 'Centenary Convocation', value: 'Convocation' },
   { label: 'Sports Day', value: 'Sports' },
@@ -22,70 +23,78 @@ const EVENT_FILTERS = [
   { label: 'Hall Life', value: 'Hall Life' },
 ];
 
+const AUTHENTIC_CAMPUS_HERITAGE_PHOTOS = [
+  {
+    id: 'heritage-facade-1',
+    title: 'Historic Main Quadrangle & Clock Tower Facade',
+    caption: 'Iconic Indo-Saracenic red-brick broadsheet architecture of Madras Christian College bathed in warm morning light.',
+    image_url: '/images/campus/mcc-main-facade.jpg',
+    event_name: 'Campus Heritage & Architecture',
+    department_name: 'College Archives & History',
+    is_authentic_showcase: true,
+  },
+  {
+    id: 'heritage-jungle-2',
+    title: 'The 365-Acre Scrub Jungle Flora & Wildlife Canopy',
+    caption: 'Pristine canopy avenue and deer trail paths through the protected Coromandel dry evergreen woodland sanctuary in Tambaram.',
+    image_url: '/images/campus/mcc-scrub-jungle.jpg',
+    event_name: 'Campus Heritage & Architecture',
+    department_name: 'Botany & Reserve',
+    is_authentic_showcase: true,
+  },
+  {
+    id: 'heritage-hall-3',
+    title: 'Residential Hall Quadrangles & Heritage Chapels',
+    caption: 'Sandstone cloisters, open verandahs, and peaceful courtyards of Heber, Selaiyur, St. Thomas’s, and Martin Halls.',
+    image_url: '/images/campus/mcc-hall-heritage.jpg',
+    event_name: 'Campus Heritage & Architecture',
+    department_name: 'Residential Halls & Lore',
+    is_authentic_showcase: true,
+  },
+  {
+    id: 'heritage-life-4',
+    title: 'Student Walkways, Cloistered Verandahs & Anderson Field',
+    caption: 'Shaded student walkways connecting academic departments with the historic Anderson athletic pavilion and greens.',
+    image_url: '/images/campus/mcc-campus-life.jpg',
+    event_name: 'Campus Heritage & Architecture',
+    department_name: 'Student Affairs & Athletics',
+    is_authentic_showcase: true,
+  },
+];
+
 const FALLBACK_GALLERY_PHOTOS = [
-  {
-    id: 'gal-1',
-    title: 'Historic Anderson Quadrangle & Tower at Dusk',
-    caption: 'The colonial architectural silhouette of Madras Christian College bathed in twilight golden hour.',
-    image_url: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200',
-    event_name: 'Campus Heritage',
-    department_name: 'Archives',
-  },
-  {
-    id: 'gal-2',
-    title: 'DeepWoods Concert Stage Under the Canopy',
-    caption: 'Scholars gather at the open-air scrub jungle amphitheatre for the annual music festival.',
-    image_url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200',
-    event_name: 'DeepWoods 2026',
-    department_name: 'Cultural Committee',
-  },
-  {
-    id: 'gal-3',
-    title: 'Native Flora in the 365-Acre Scrub Jungle',
-    caption: 'Longitudinal botanical survey documenting rare monsoon orchids and indigenous flora.',
-    image_url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=1200',
-    event_name: 'Scrub Jungle & Flora',
-    department_name: 'Botany',
-  },
-  {
-    id: 'gal-4',
-    title: 'Annual Inter-Hall Cricket Championship',
-    caption: 'Intense collegiate sportsmanship as Selaiyur Hall and Bishop Heber Hall compete on the main pitch.',
-    image_url: 'https://images.unsplash.com/photo-1531415074868-036b107e775a?w=1200',
-    event_name: 'Sports Day',
-    department_name: 'Physical Education',
-  },
+  ...AUTHENTIC_CAMPUS_HERITAGE_PHOTOS,
   {
     id: 'gal-5',
-    title: 'Anderson Hall Centennial Academic Convocation',
-    caption: 'Faculty procession and graduating scholars assembling in traditional academic regalia.',
-    image_url: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200',
-    event_name: 'Centenary Convocation',
-    department_name: 'Administration',
-  },
-  {
-    id: 'gal-6',
-    title: 'Evening Fellowship in St. Thomas’s Hall Quadrangle',
-    caption: 'Scholars engaging in evening discussions and literary debates beneath the tamarind trees.',
-    image_url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1200',
+    title: 'Heritage Residential Hall Entrance & Crest',
+    caption: 'Colonial entrance porch with tiled roofs, official collegiate crest insignia, and surrounding palms.',
+    image_url: '/images/campus/mcc-hall-heritage.jpg',
     event_name: 'Hall Life',
     department_name: 'Residential Halls',
   },
   {
+    id: 'gal-6',
+    title: 'Lush Campus Grounds & Guthridge Tower',
+    caption: 'Pristine central lawn and historic academic halls in the heart of the Tambaram estate.',
+    image_url: '/images/campus/mcc-main-facade.jpg',
+    event_name: 'DeepWoods',
+    department_name: 'Cultural Committee',
+  },
+  {
     id: 'gal-7',
-    title: 'Rare Avian Biodiversity in Tambaram Sanctuary',
-    caption: 'Resident ornithologists document seasonal migratory waterbirds visiting the collegiate lake.',
-    image_url: 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=1200',
+    title: 'Biodiversity Corridors of the Tambaram Reserve',
+    caption: 'Paved forest pathway through the tropical dry evergreen woodland sanctuary.',
+    image_url: '/images/campus/mcc-scrub-jungle.jpg',
     event_name: 'Scrub Jungle & Flora',
-    department_name: 'Zoology',
+    department_name: 'Botany',
   },
   {
     id: 'gal-8',
-    title: 'Literary Debate Society Finals in Miller Library',
-    caption: 'Scholarly parliamentary arguments in the historic Miller Memorial reading room.',
-    image_url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1200',
-    event_name: 'Campus Heritage',
-    department_name: 'English',
+    title: 'Collegiate Balustrades & Academic Quarters',
+    caption: 'Stately architectural composition channeling coastal breezes through open verandas.',
+    image_url: '/images/campus/mcc-campus-life.jpg',
+    event_name: 'Sports Day',
+    department_name: 'Physical Education',
   },
 ];
 
@@ -93,7 +102,12 @@ const FALLBACK_GALLERY_PHOTOS = [
  * Normalizes image URLs for local or external media.
  */
 function getMediaUrl(url) {
-  if (!url) return '';
+  if (!url || url.includes('unsplash.com')) {
+    return '/images/campus/mcc-main-facade.jpg';
+  }
+  if (url.startsWith('/images/')) {
+    return url;
+  }
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
@@ -121,38 +135,62 @@ export default function Gallery() {
       setLoading(true);
       try {
         const params = { limit: 50 };
-        if (activeFilter && activeFilter !== 'all') {
+        if (
+          activeFilter &&
+          activeFilter !== 'all' &&
+          activeFilter !== 'Campus Heritage & Architecture'
+        ) {
           params.event_name = activeFilter;
         }
 
         const res = await articleService.getGalleries(params);
         if (!isMounted) return;
 
-        if (res.data) {
-          const list = Array.isArray(res.data) ? res.data : (res.data.data || []);
-          if (list.length > 0) {
-            setPhotos(list);
+        let combined = [];
+        const rawList = res.data ? (Array.isArray(res.data) ? res.data : (res.data.data || [])) : [];
+
+        if (activeFilter === 'all') {
+          // Feature row 1: 4 authentic photos
+          const filteredRaw = rawList.filter(
+            (item) => !AUTHENTIC_CAMPUS_HERITAGE_PHOTOS.some((a) => a.image_url === item.image_url)
+          );
+          combined = [...AUTHENTIC_CAMPUS_HERITAGE_PHOTOS, ...filteredRaw];
+        } else if (
+          activeFilter === 'Campus Heritage & Architecture' ||
+          activeFilter.toLowerCase().includes('heritage')
+        ) {
+          const apiMatches = rawList.filter(
+            (item) =>
+              item.event_name?.toLowerCase().includes('heritage') ||
+              item.event_name?.toLowerCase().includes('architecture')
+          );
+          combined = [...AUTHENTIC_CAMPUS_HERITAGE_PHOTOS, ...apiMatches];
+        } else {
+          if (rawList.length > 0) {
+            combined = rawList;
           } else {
-            // Filter fallback photos
-            let filtered = FALLBACK_GALLERY_PHOTOS;
-            if (activeFilter !== 'all') {
-              filtered = filtered.filter((p) =>
-                p.event_name.toLowerCase().includes(activeFilter.toLowerCase())
-              );
-            }
-            setPhotos(filtered.length > 0 ? filtered : FALLBACK_GALLERY_PHOTOS);
+            combined = FALLBACK_GALLERY_PHOTOS.filter((p) =>
+              p.event_name?.toLowerCase().includes(activeFilter.toLowerCase())
+            );
           }
         }
+
+        setPhotos(combined.length > 0 ? combined : AUTHENTIC_CAMPUS_HERITAGE_PHOTOS);
       } catch (err) {
         console.error('Failed to load gallery items:', err);
         if (isMounted) {
-          let filtered = FALLBACK_GALLERY_PHOTOS;
-          if (activeFilter !== 'all') {
-            filtered = filtered.filter((p) =>
-              p.event_name.toLowerCase().includes(activeFilter.toLowerCase())
+          if (
+            activeFilter === 'all' ||
+            activeFilter === 'Campus Heritage & Architecture' ||
+            activeFilter.toLowerCase().includes('heritage')
+          ) {
+            setPhotos(AUTHENTIC_CAMPUS_HERITAGE_PHOTOS);
+          } else {
+            const filtered = FALLBACK_GALLERY_PHOTOS.filter((p) =>
+              p.event_name?.toLowerCase().includes(activeFilter.toLowerCase())
             );
+            setPhotos(filtered.length > 0 ? filtered : AUTHENTIC_CAMPUS_HERITAGE_PHOTOS);
           }
-          setPhotos(filtered.length > 0 ? filtered : FALLBACK_GALLERY_PHOTOS);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -270,15 +308,18 @@ export default function Gallery() {
               <div
                 key={item.id || idx}
                 onClick={() => handlePhotoClick(idx)}
-                className="group relative bg-white rounded-md border border-gray-200 hover:border-mcc-maroon/50 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col"
+                className="group relative p-1.5 bg-[#fbfaf8] rounded-xs border border-gray-300 shadow-sm ring-1 ring-mcc-gold/30 hover:border-mcc-maroon/50 overflow-hidden transition-all cursor-pointer flex flex-col max-w-full"
               >
                 {/* Image Aspect Box */}
-                <div className="relative h-60 overflow-hidden bg-gray-100">
+                <div className="relative h-60 overflow-hidden bg-gray-100 rounded-xs">
                   <img
                     src={url}
                     alt={item.title || 'Campus Photo'}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.src = '/images/campus/mcc-main-facade.jpg';
+                    }}
                   />
 
                   {/* Dark Gradient Overlay on Hover */}
@@ -299,11 +340,19 @@ export default function Gallery() {
                     </div>
                   </div>
 
-                  {/* Event Badge */}
-                  {item.event_name && (
-                    <div className="absolute top-2.5 left-2.5 group-hover:opacity-0 transition-opacity">
-                      <span className="px-2 py-0.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-serif uppercase tracking-widest rounded">
+                  {/* Badges */}
+                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1 group-hover:opacity-0 transition-opacity">
+                    {item.event_name && (
+                      <span className="px-2 py-0.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-serif uppercase tracking-widest rounded-xs">
                         {item.event_name}
+                      </span>
+                    )}
+                  </div>
+
+                  {item.is_authentic_showcase && (
+                    <div className="absolute top-2.5 right-2.5 group-hover:opacity-0 transition-opacity">
+                      <span className="px-2 py-0.5 bg-mcc-maroon/90 backdrop-blur-xs text-mcc-gold text-[9px] font-serif uppercase tracking-widest font-bold rounded-xs shadow-xs border border-mcc-gold/30">
+                        Archival Plate
                       </span>
                     </div>
                   )}

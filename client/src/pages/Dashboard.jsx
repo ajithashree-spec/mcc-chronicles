@@ -1,39 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AdminLayout from '../components/admin/AdminLayout';
 import DashboardOverview from '../components/admin/DashboardOverview';
-import ArticleManager from '../components/admin/ArticleManager';
+import ArticlesDesk from '../components/admin/ArticlesDesk';
 import CircularManager from '../components/admin/CircularManager';
 import GalleryManager from '../components/admin/GalleryManager';
-import InquiryManager from '../components/admin/InquiryManager';
 import InquiriesManager from '../components/admin/InquiriesManager';
 import CommentsManager from '../components/admin/CommentsManager';
-import AuditManager from '../components/admin/AuditManager';
 import AuditLogExplorer from '../components/admin/AuditLogExplorer';
 import BackupConsole from '../components/admin/BackupConsole';
 import SettingsConsole from '../components/admin/SettingsConsole';
 import UserManager from '../components/admin/UserManager';
+import DepartmentManager from '../components/admin/DepartmentManager';
+import CategoryManager from '../components/admin/CategoryManager';
 import ArticleEditorModal from '../components/admin/ArticleEditorModal';
 
-export default function Dashboard() {
+export default function Dashboard({ isSuperAdmin = false }) {
   const { user } = useAuth();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Tab state synced with URL query parameter ?tab=...
-  const initialTab = searchParams.get('tab') || 'overview';
-  const [activeTab, setActiveTab] = useState(initialTab);
+  // Detect Super Admin route
+  const isSuper = isSuperAdmin || location.pathname.startsWith('/superadmin');
+
+  // Unified Admin (/admin): Valid tabs are strictly 'articles' and 'gallery'
+  const validAdminTabs = ['articles', 'gallery'];
+  const defaultTab = isSuper ? 'settings' : 'articles';
+
+  const tabParam = searchParams.get('tab');
+  const resolvedTab = isSuper
+    ? (tabParam || defaultTab)
+    : (validAdminTabs.includes(tabParam) ? tabParam : 'articles');
+
+  const [activeTab, setActiveTab] = useState(resolvedTab);
 
   // Standalone Article Editor Modal trigger for global quick actions
   const [isQuickArticleModalOpen, setIsQuickArticleModalOpen] = useState(false);
 
-  // Synchronize state when query param changes
+  // Synchronize state when query param or location changes
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam && tabParam !== activeTab) {
-      setActiveTab(tabParam);
+    const currentParam = searchParams.get('tab');
+    const targetTab = isSuper
+      ? (currentParam || 'settings')
+      : (validAdminTabs.includes(currentParam) ? currentParam : 'articles');
+
+    if (targetTab !== activeTab) {
+      setActiveTab(targetTab);
     }
-  }, [searchParams]);
+  }, [searchParams, isSuper, location.pathname]);
 
   // Handle tab selection
   const handleTabChange = (newTab) => {
@@ -42,9 +57,35 @@ export default function Dashboard() {
   };
 
   return (
-    <AdminLayout activeTab={activeTab} onTabChange={handleTabChange}>
-      {/* 1. OVERVIEW TAB */}
-      {activeTab === 'overview' && (
+    <AdminLayout
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+      isSuperAdmin={isSuper}
+    >
+      {/* ============================================================== */}
+      {/* 1. ARTICLES DESK (Shared: Unified Admin & Super Admin)         */}
+      {/* ============================================================== */}
+      {activeTab === 'articles' && (
+        <ArticlesDesk
+          onComposeArticle={() => setIsQuickArticleModalOpen(true)}
+        />
+      )}
+
+      {/* ============================================================== */}
+      {/* 2. MEDIA & PHOTO GALLERY (Shared: Unified Admin & Super Admin)  */}
+      {/* ============================================================== */}
+      {activeTab === 'gallery' && <GalleryManager />}
+
+      {/* ============================================================== */}
+      {/* SUPER ADMIN MASTER GOVERNANCE CONSOLES (/superadmin ONLY)      */}
+      {/* ============================================================== */}
+      {isSuper && activeTab === 'settings' && <SettingsConsole />}
+      {isSuper && activeTab === 'categories' && <CategoryManager />}
+      {isSuper && activeTab === 'departments' && <DepartmentManager />}
+      {isSuper && activeTab === 'users' && <UserManager />}
+      {isSuper && activeTab === 'audit' && <AuditLogExplorer />}
+      {isSuper && activeTab === 'backups' && <BackupConsole />}
+      {isSuper && activeTab === 'overview' && (
         <DashboardOverview
           onNavigateTab={handleTabChange}
           onOpenArticleEditor={() => setIsQuickArticleModalOpen(true)}
@@ -52,37 +93,9 @@ export default function Dashboard() {
           onOpenGalleryModal={() => handleTabChange('gallery')}
         />
       )}
-
-      {/* 2. ARTICLES CONSOLE */}
-      {activeTab === 'articles' && (
-        <ArticleManager
-          onComposeArticle={() => setIsQuickArticleModalOpen(true)}
-        />
-      )}
-
-      {/* 3. CIRCULARS CONSOLE */}
-      {activeTab === 'circulars' && <CircularManager />}
-
-      {/* 4. GALLERY CONSOLE */}
-      {activeTab === 'gallery' && <GalleryManager />}
-
-      {/* 5. INQUIRIES & TIPS CONSOLE */}
-      {activeTab === 'inquiries' && <InquiriesManager />}
-
-      {/* 6. READER COMMENTS CONSOLE */}
-      {activeTab === 'comments' && <CommentsManager />}
-
-      {/* 7. AUDIT LOGS CONSOLE (Super Admin) */}
-      {activeTab === 'audit' && user?.role === 'super_admin' && <AuditLogExplorer />}
-
-      {/* 8. DATA BACKUPS & SNAPSHOTS (Super Admin) */}
-      {activeTab === 'backups' && user?.role === 'super_admin' && <BackupConsole />}
-
-      {/* 9. SITE SETTINGS & BRANDING (Super Admin) */}
-      {activeTab === 'settings' && user?.role === 'super_admin' && <SettingsConsole />}
-
-      {/* 10. USER & STAFF GOVERNANCE CONSOLE (Super Admin, Task 90) */}
-      {activeTab === 'users' && user?.role === 'super_admin' && <UserManager />}
+      {isSuper && activeTab === 'circulars' && <CircularManager />}
+      {isSuper && activeTab === 'inquiries' && <InquiriesManager />}
+      {isSuper && activeTab === 'comments' && <CommentsManager />}
 
       {/* GLOBAL COMPOSE MODAL (Triggerable from Quick Action Row) */}
       <ArticleEditorModal

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, useLocation, Link } from 'react-router-dom';
 import {
   Calendar,
   Clock,
@@ -12,6 +12,7 @@ import {
   FolderOpen,
 } from 'lucide-react';
 import articleService from '../services/articleService';
+import EmptyDispatch from '../components/common/EmptyDispatch';
 
 // Category titles & descriptive editorial blurbs
 const SECTION_METADATA = {
@@ -51,8 +52,11 @@ const SECTION_METADATA = {
  * Normalizes cover image URLs to support both external and local uploads.
  */
 function getMediaUrl(url) {
-  if (!url) {
-    return 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800';
+  if (!url || url.includes('unsplash.com')) {
+    return '/images/mcc-campus-hero.jpg';
+  }
+  if (url.startsWith('/images/')) {
+    return url;
   }
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
@@ -90,91 +94,86 @@ function getReadingTime(content, summary) {
   return `${minutes} min read`;
 }
 
-// Fallback articles if section or API is empty
-const FALLBACK_CATEGORY_ARTICLES = [
-  {
-    id: 'f-1',
-    slug: 'centennial-celebrations-anderson-quadrangle-research-grants',
-    title:
-      'Centennial Celebrations in Anderson Quadrangle: 187th Academic Year Commences',
-    summary:
-      'Scholars and faculty unveil major interdisciplinary research initiatives across the 365-acre scrub jungle campus.',
-    cover_image:
-      'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800',
-    category_name: 'Campus News',
-    author_name: 'MCC Editorial Board',
-    department_name: 'Administration',
-    published_at: '2026-10-04T08:00:00Z',
-  },
-  {
-    id: 'f-2',
-    slug: 'botany-department-rare-medicinal-flora-discovery',
-    title:
-      'Botany Department Discovers Rare Medicinal Flora in Southern Scrub Woodland',
-    summary:
-      'Collaborative field research spanning three decades identifies previously uncatalogued medicinal plant varieties.',
-    cover_image:
-      'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800',
-    category_name: 'Research',
-    author_name: 'Dr. E. Botany',
-    department_name: 'Botany',
-    published_at: '2026-10-03T11:00:00Z',
-  },
-  {
-    id: 'f-3',
-    slug: 'deepwoods-2026-concert-finale-lineup-announced',
-    title:
-      'DeepWoods 2026 Concert Lineup: Legendary Woods Stage to Host National Bands',
-    summary:
-      'The cultural committee reveals headline acts for the 46th edition of South India’s most anticipated festival.',
-    cover_image:
-      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800',
-    category_name: 'DeepWoods & Cultural',
-    author_name: 'Cultural Desk',
-    department_name: 'Fine Arts',
-    published_at: '2026-10-02T14:30:00Z',
-  },
-];
 
-export default function CategoryArchive() {
+
+export default function CategoryArchive({ defaultCategory = null, isDepartment = false }) {
   const { slug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const deptParam = searchParams.get('dept');
   const currentPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+
+  const isDept = isDepartment || location.pathname.startsWith('/departments') || Boolean(deptParam);
+  const activeSlug = slug || defaultCategory || (isDept ? deptParam : 'campus-news');
 
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [departmentDetails, setDepartmentDetails] = useState(null);
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
     limit: 9,
     totalPages: 1,
   });
-  const [categoryInfo, setCategoryInfo] = useState(null);
+
+  // Format department name from slug if department route
+  const formatDeptName = (s) => {
+    if (!s) return 'Department Bureau';
+    // If it's a code like ENG-AID
+    if (s.includes('-')) {
+      return s
+        .split('-')
+        .map((w) => w.toUpperCase())
+        .join(' - ');
+    }
+    return s
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  };
 
   // Derive human title from slug or preset map
-  const meta = SECTION_METADATA[slug] || {
-    title: slug
-      ? slug
-          .split('-')
-          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(' ') + ' Section'
-      : 'Broadsheet Gazette Section',
-    subtitle:
-      'Archival records, dispatches, and reports published under this editorial desk.',
-  };
+  const meta = isDept
+    ? {
+        title: departmentDetails?.name || `Department of ${formatDeptName(activeSlug)}`,
+        subtitle:
+          departmentDetails?.description ||
+          'Official academic dispatches, curriculum notices, student research, and bureau announcements.',
+        breadcrumbCategory: 'Academic Departments',
+        breadcrumbLink: '/departments',
+      }
+    : SECTION_METADATA[activeSlug] || {
+        title: activeSlug
+          ? activeSlug
+              .split('-')
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ') + ' Section'
+          : 'Campus News & Dispatches',
+        subtitle:
+          'Archival records, dispatches, and reports published under this editorial desk.',
+        breadcrumbCategory: 'News Desks',
+        breadcrumbLink: '/news',
+      };
 
   useEffect(() => {
     let isMounted = true;
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    async function fetchCategoryData() {
+    async function fetchData() {
       setLoading(true);
       try {
-        const res = await articleService.getArticles({
-          category: slug,
+        const queryParams = {
           page: currentPage,
           limit: 9,
-        });
+        };
+
+        if (isDept) {
+          queryParams.department = activeSlug;
+        } else {
+          queryParams.category = activeSlug;
+        }
+
+        const res = await articleService.getArticles(queryParams);
 
         if (!isMounted) return;
 
@@ -191,19 +190,9 @@ export default function CategoryArchive() {
             setArticles(list);
             setPagination(pag);
           } else {
-            // Check if matches fallback
-            const filteredFallback = FALLBACK_CATEGORY_ARTICLES.filter(
-              (f) =>
-                f.category_name.toLowerCase().includes(slug.replace(/-/g, ' ')) ||
-                slug.includes(f.category_name.toLowerCase().split(' ')[0])
-            );
-            setArticles(
-              filteredFallback.length > 0
-                ? filteredFallback
-                : FALLBACK_CATEGORY_ARTICLES
-            );
+            setArticles([]);
             setPagination({
-              total: filteredFallback.length || FALLBACK_CATEGORY_ARTICLES.length,
+              total: 0,
               page: 1,
               limit: 9,
               totalPages: 1,
@@ -211,11 +200,11 @@ export default function CategoryArchive() {
           }
         }
       } catch (err) {
-        console.error('Failed to load category articles:', err);
+        console.error('Failed to load dispatches:', err);
         if (isMounted) {
-          setArticles(FALLBACK_CATEGORY_ARTICLES);
+          setArticles([]);
           setPagination({
-            total: FALLBACK_CATEGORY_ARTICLES.length,
+            total: 0,
             page: 1,
             limit: 9,
             totalPages: 1,
@@ -226,12 +215,12 @@ export default function CategoryArchive() {
       }
     }
 
-    fetchCategoryData();
+    fetchData();
 
     return () => {
       isMounted = false;
     };
-  }, [slug, currentPage]);
+  }, [activeSlug, currentPage, isDept]);
 
   const handlePageChange = (newPage) => {
     setSearchParams({ page: newPage });
@@ -245,7 +234,9 @@ export default function CategoryArchive() {
           Home
         </Link>
         <span className="text-gray-300">/</span>
-        <span className="text-gray-400">Sections</span>
+        <Link to={meta.breadcrumbLink} className="text-gray-500 hover:text-mcc-maroon transition-colors">
+          {meta.breadcrumbCategory}
+        </Link>
         <span className="text-gray-300">/</span>
         <span className="text-mcc-maroon font-bold font-serif">{meta.title}</span>
       </nav>
@@ -255,7 +246,7 @@ export default function CategoryArchive() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b-2 border-mcc-maroon">
           <div>
             <span className="text-xs font-serif uppercase tracking-widest text-mcc-gold font-bold block mb-1">
-              Collegiate Gazette Section
+              {isDept ? 'Academic Department Bureau' : 'Collegiate Gazette Section'}
             </span>
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-black text-gray-950 uppercase tracking-tight">
               {meta.title}
@@ -267,7 +258,7 @@ export default function CategoryArchive() {
 
           <div className="sm:text-right shrink-0">
             <span className="text-xs font-serif uppercase tracking-widest font-bold text-gray-600 block">
-              Volume CLXXXIX • Tambaram Edition
+              Madras Christian College • Tambaram
             </span>
             <span className="text-xs font-sans text-mcc-maroon font-semibold">
               {pagination.total} {pagination.total === 1 ? 'Dispatch' : 'Dispatches'} in Archives
@@ -298,23 +289,7 @@ export default function CategoryArchive() {
         </div>
       ) : articles.length === 0 ? (
         /* Empty State */
-        <div className="text-center py-20 px-4 bg-white rounded-md border border-dashed border-gray-300 max-w-2xl mx-auto">
-          <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <h3 className="font-serif text-xl font-bold text-gray-800">
-            No Dispatches Filed Under This Desk Yet
-          </h3>
-          <p className="text-sm font-serif text-gray-600 mt-1 leading-relaxed">
-            Our student correspondents and faculty editors are currently assembling dispatches for this section. Please check back shortly or explore our front page.
-          </p>
-          <div className="mt-6">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-mcc-maroon text-white font-serif uppercase tracking-wider text-xs font-bold rounded hover:bg-mcc-maroon-dark transition-colors shadow-xs"
-            >
-              Return to Front Page
-            </Link>
-          </div>
-        </div>
+        <EmptyDispatch bureau={meta.title} />
       ) : (
         /* Render Articles Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

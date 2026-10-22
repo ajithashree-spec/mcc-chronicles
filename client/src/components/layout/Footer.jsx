@@ -1,259 +1,189 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Rss,
-  Mail,
-  Send,
-  ExternalLink,
   MapPin,
-  Phone,
-  ShieldCheck,
   Award,
+  ShieldCheck,
+  ExternalLink,
+  Phone,
+  Mail,
+  Compass,
+  Layers,
 } from 'lucide-react';
-import NewsletterBox from '../common/NewsletterBox';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-mcc-navy text-gray-200 border-t-4 border-mcc-maroon font-sans">
-      {/* 1. TOP EDITORIAL BANNER */}
-      <div className="border-b border-white/10 bg-mcc-navy-dark py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4 text-center md:text-left">
-            <img
-              src="/assets/mcc-crest.png"
-              alt="MCC Crest"
-              className="h-16 w-auto object-contain filter drop-shadow brightness-110"
-            />
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-wide uppercase">
-                The MCC Chronicles
-              </h2>
-              <p className="text-xs font-serif text-mcc-gold uppercase tracking-[0.2em] mt-0.5">
-                The Autonomous Journal of Record • Founded 1837 • Tambaram, Chennai
-              </p>
+    <footer className="bg-[#581A20] text-[#FAF8F5] border-t-4 border-[#C5A059] font-sans mt-auto shadow-inner">
+      {/* 1. MAIN 3-COLUMN INSTITUTIONAL FOOTER */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 items-start">
+          {/* COLUMN 1: INSTITUTIONAL IDENTITY */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3.5">
+              <img
+                src="/assets/mcc-crest.png"
+                alt="Madras Christian College Crest"
+                className="h-14 sm:h-16 w-auto object-contain filter drop-shadow-md brightness-105"
+              />
+              <div>
+                <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#FAF8F5] tracking-tight leading-tight">
+                  Madras Christian College
+                </h3>
+                <span className="text-[10px] sm:text-[11px] font-sans font-bold tracking-[0.25em] text-[#C5A059] uppercase block mt-0.5">
+                  CAMPUS NEWS PORTAL
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3 text-xs">
-            <Link
-              to="/contact"
-              className="px-4 py-2 bg-mcc-maroon text-white font-semibold rounded hover:bg-mcc-maroon-light transition-colors uppercase tracking-wider flex items-center gap-2"
-            >
-              <Send className="w-3.5 h-3.5 text-mcc-gold" />
-              <span>Send Editorial Tip</span>
-            </Link>
-            <a
-              href="/api/feed/rss"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-gray-200 font-medium rounded transition-colors flex items-center gap-1.5"
-            >
-              <Rss className="w-3.5 h-3.5 text-mcc-gold" />
-              <span>RSS</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. MAIN 4-COLUMN BROADSHEET EDITORIAL GRID */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Newsletter Subscription Box */}
-        <NewsletterBox variant="footer" className="mb-12" />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-          {/* Column 1: Institutional Heritage */}
-          <div>
-            <h3 className="text-sm font-serif font-bold text-mcc-gold uppercase tracking-widest pb-2 border-b border-white/15 mb-4">
-              Institutional Heritage
-            </h3>
-            <p className="text-xs text-gray-300 leading-relaxed font-serif mb-4">
-              Madras Christian College, established in 1837, is an autonomous liberal arts and sciences institution affiliated with the University of Madras.
+            <p className="text-xs text-[#FAF8F5]/90 leading-relaxed font-serif">
+              An autonomous liberal arts and sciences institution affiliated with the University of Madras. Dedicated to academic excellence, investigative student journalism, and scientific inquiry in the 365-acre scrub jungle sanctuary.
             </p>
-            <div className="space-y-2 text-xs text-gray-400">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-mcc-gold shrink-0 mt-0.5" />
-                <span>Tambaram East, Chennai - 600059, Tamil Nadu, India</span>
+
+            <div className="space-y-1.5 text-xs text-[#FAF8F5]/90 pt-1">
+              <div className="flex items-center gap-2">
+                <Award className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
+                <span className="font-medium">Autonomous Institution &bull; NAAC A++ Grade</span>
               </div>
               <div className="flex items-center gap-2">
-                <Award className="w-4 h-4 text-mcc-gold shrink-0" />
-                <span>NAAC A++ Grade • UGC Autonomous</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-mcc-gold shrink-0" />
-                <span>Motto: &quot;That they may have life, and have it abundantly&quot;</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
+                <span className="font-serif italic text-[#C5A059]">Motto: &quot;Lighted to Lighten&quot; • Est. 1837</span>
               </div>
             </div>
           </div>
 
-          {/* Column 2: Journal Sections */}
-          <div>
-            <h3 className="text-sm font-serif font-bold text-mcc-gold uppercase tracking-widest pb-2 border-b border-white/15 mb-4">
-              News Desks & Sections
-            </h3>
-            <ul className="space-y-2 text-xs">
+          {/* COLUMN 2: QUICK LINKS (Strictly Read-Only, No Login/Submit CTA) */}
+          <div className="space-y-3">
+            <h4 className="text-[#C5A059] font-serif font-bold text-sm tracking-widest uppercase mb-3 pb-2 border-b border-[#C5A059]/30">
+              Navigation Desks
+            </h4>
+            <ul className="space-y-2.5 text-xs font-serif">
               <li>
-                <Link to="/category/campus-news" className="text-gray-300 hover:text-white transition-colors">
-                  Campus News & Administration
+                <Link
+                  to="/"
+                  className="text-[#FAF8F5]/80 hover:text-[#C5A059] text-xs transition-colors flex items-center gap-2 group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] group-hover:scale-125 transition-transform" />
+                  <span className="font-medium">Home</span>
                 </Link>
               </li>
               <li>
-                <Link to="/category/academics" className="text-gray-300 hover:text-white transition-colors">
-                  Academics & Faculty Research
+                <Link
+                  to="/news"
+                  className="text-[#FAF8F5]/80 hover:text-[#C5A059] text-xs transition-colors flex items-center gap-2 group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] group-hover:scale-125 transition-transform" />
+                  <span className="font-medium">Campus News & Dispatches</span>
                 </Link>
               </li>
               <li>
-                <Link to="/category/deepwoods-cultural" className="text-gray-300 hover:text-white transition-colors">
-                  DeepWoods Cultural Fest
+                <Link
+                  to="/circulars"
+                  className="text-[#FAF8F5]/80 hover:text-[#C5A059] text-xs transition-colors flex items-center gap-2 group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] group-hover:scale-125 transition-transform" />
+                  <span className="font-medium">Official Circulars & Gazette</span>
                 </Link>
               </li>
               <li>
-                <Link to="/category/sports" className="text-gray-300 hover:text-white transition-colors">
-                  Inter-Collegiate Sports & Athletics
+                <Link
+                  to="/departments"
+                  className="text-[#FAF8F5]/80 hover:text-[#C5A059] text-xs transition-colors flex items-center gap-2 group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] group-hover:scale-125 transition-transform" />
+                  <span className="font-medium">Academic Departments (38 Bureaus)</span>
                 </Link>
               </li>
               <li>
-                <Link to="/category/research" className="text-gray-300 hover:text-white transition-colors">
-                  Scholarly Insights & Archives
+                <Link
+                  to="/gallery"
+                  className="text-[#FAF8F5]/80 hover:text-[#C5A059] text-xs transition-colors flex items-center gap-2 group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] group-hover:scale-125 transition-transform" />
+                  <span className="font-medium">Collegiate Media Gallery</span>
                 </Link>
               </li>
               <li>
-                <Link to="/gallery" className="text-gray-300 hover:text-white transition-colors">
-                  Pictorial Gazette & Campus Galleries
-                </Link>
-              </li>
-              <li>
-                <Link to="/departments" className="text-gray-300 hover:text-white transition-colors">
-                  Department Bureaus & Academic Directory
+                <Link
+                  to="/map"
+                  className="text-[#FAF8F5]/80 hover:text-[#C5A059] text-xs transition-colors flex items-center gap-2 group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] group-hover:scale-125 transition-transform" />
+                  <span className="font-medium">Interactive Campus Map & Landmarks</span>
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 3: Institutional Governance */}
-          <div>
-            <h3 className="text-sm font-serif font-bold text-mcc-gold uppercase tracking-widest pb-2 border-b border-white/15 mb-4">
-              Governance & Gazette
-            </h3>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <Link to="/circulars" className="text-gray-300 hover:text-white transition-colors">
-                  Official Academic Circulars
-                </Link>
-              </li>
-              <li>
+          {/* COLUMN 3: INSTITUTIONAL ADDRESS & CAMPUS CONTACT */}
+          <div className="space-y-3">
+            <h4 className="text-[#C5A059] font-serif font-bold text-sm tracking-widest uppercase mb-3 pb-2 border-b border-[#C5A059]/30">
+              Tambaram Campus
+            </h4>
+            <div className="space-y-2.5 text-xs text-[#FAF8F5]/90 leading-relaxed">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
+                <span>
+                  Madras Christian College,
+                  <br />
+                  Tambaram East, Chennai - 600059,
+                  <br />
+                  Tamil Nadu, India
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5 pt-1">
+                <Phone className="w-4 h-4 text-[#C5A059] shrink-0" />
+                <span className="font-mono text-[#FAF8F5]/85">+91 44 2239 0675</span>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <Mail className="w-4 h-4 text-[#C5A059] shrink-0" />
+                <span className="font-mono text-[#FAF8F5]/85">principal@mcc.edu.in</span>
+              </div>
+
+              <div className="pt-2">
                 <a
                   href="https://mcc.edu.in"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-white transition-colors flex items-center gap-1"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#C5A059] hover:text-white transition-colors"
                 >
-                  <span>College Main Portal (mcc.edu.in)</span>
-                  <ExternalLink className="w-3 h-3 text-gray-500" />
+                  <span>College Official Portal (mcc.edu.in)</span>
+                  <ExternalLink className="w-3 h-3 text-[#C5A059]" />
                 </a>
-              </li>
-              <li>
-                <span className="text-gray-400">Office of the Controller of Examinations</span>
-              </li>
-              <li>
-                <span className="text-gray-400">Internal Quality Assurance Cell (IQAC)</span>
-              </li>
-              <li>
-                <span className="text-gray-400">Miller Memorial Library & Archives</span>
-              </li>
-              <li>
-                <Link to="/login" className="text-mcc-gold hover:underline">
-                  Staff & Editorial Login
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 4: Connect & Syndication */}
-          <div>
-            <h3 className="text-sm font-serif font-bold text-mcc-gold uppercase tracking-widest pb-2 border-b border-white/15 mb-4">
-              Editorial Board & Feeds
-            </h3>
-            <p className="text-xs text-gray-300 mb-3 leading-relaxed">
-              Have a campus scoop, student achievement, or historical photograph?
-            </p>
-            <div className="space-y-2 text-xs mb-4">
-              <Link
-                to="/about"
-                className="block text-gray-300 hover:text-white transition-colors"
-              >
-                About The MCC Chronicles
-              </Link>
-              <Link
-                to="/ethics"
-                className="block text-gray-300 hover:text-white transition-colors"
-              >
-                Editorial Charter & Ethics
-              </Link>
-              <Link
-                to="/contact"
-                className="block text-gray-300 hover:text-white transition-colors"
-              >
-                Submit Correction or Feedback
-              </Link>
-              <a
-                href="/api/feed/rss"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-gray-300 hover:text-white transition-colors"
-              >
-                RSS 2.0 Syndication Feed
-              </a>
-              <a
-                href="/api/feed/atom"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-gray-300 hover:text-white transition-colors"
-              >
-                Atom 1.0 Syndication Feed
-              </a>
-              <a
-                href="/sitemap.xml"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-gray-300 hover:text-white transition-colors"
-              >
-                XML Sitemap Index
-              </a>
-            </div>
-            <div className="text-[11px] text-gray-400 border-t border-white/10 pt-3">
-              Editorial Desk: <span className="text-gray-200">editorial@mcc.edu.in</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. BOTTOM COLOPHON & COPYRIGHT */}
-      <div className="border-t border-white/10 bg-mcc-navy-dark text-[11px] text-gray-400 py-4 px-4 sm:px-6 lg:px-8">
+      {/* 2. SUB-FOOTER BAR (Dark Midnight Navy #0A1926 + Hairline Gold Rule) */}
+      <div className="border-t border-[#C5A059]/30 bg-[#0A1926] text-[11px] text-[#FAF8F5]/70 py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div>
-            © {currentYear} <strong>The MCC Chronicles</strong>. Published by the Editorial Board of Madras Christian College (Autonomous). All rights reserved.
+            &copy; {currentYear} <strong className="text-[#FAF8F5]">Madras Christian College</strong>. All rights reserved. Official Campus News Portal.
           </div>
-          <div className="flex items-center gap-4 text-gray-400">
-            <Link to="/about" className="hover:text-white transition-colors">
+          <div className="flex flex-wrap items-center justify-center gap-3 text-[#FAF8F5]/75">
+            <Link to="/about" className="hover:text-[#C5A059] transition-colors">
               About
             </Link>
-            <span>•</span>
-            <Link to="/ethics" className="hover:text-white transition-colors">
-              Ethics
+            <span className="text-[#C5A059]/60">&bull;</span>
+            <Link to="/ethics" className="hover:text-[#C5A059] transition-colors">
+              Editorial Ethics
             </Link>
-            <span>•</span>
-            <Link to="/contact" className="hover:text-white transition-colors">
-              Contact Board
+            <span className="text-[#C5A059]/60">&bull;</span>
+            <Link to="/contact" className="hover:text-[#C5A059] transition-colors">
+              Contact Desk
             </Link>
-            <span>•</span>
-            <a href="/sitemap.xml" className="hover:text-white transition-colors">
-              Sitemap
-            </a>
-            <span>•</span>
-            <a href="/api/feed/rss" className="hover:text-white transition-colors">
-              RSS
+            <span className="text-[#C5A059]/60">&bull;</span>
+            <Link to="/login" className="hover:text-[#C5A059] transition-colors">
+              Staff Portal
+            </Link>
+            <span className="text-[#C5A059]/60">&bull;</span>
+            <a href="/api/feed/rss" target="_blank" rel="noopener noreferrer" className="hover:text-[#C5A059] transition-colors">
+              RSS Feed
             </a>
           </div>
         </div>

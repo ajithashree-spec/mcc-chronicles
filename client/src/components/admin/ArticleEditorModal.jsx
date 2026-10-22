@@ -21,6 +21,9 @@ import {
   AlertCircle,
   CheckCircle,
   Calendar,
+  Trash2,
+  User,
+  Building2,
 } from 'lucide-react';
 
 function slugify(text) {
@@ -48,6 +51,7 @@ export default function ArticleEditorModal({
   // Form states
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
+  const [authorName, setAuthorName] = useState('');
   const [summary, setSummary] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [departmentId, setDepartmentId] = useState('');
@@ -75,9 +79,10 @@ export default function ArticleEditorModal({
       if (article) {
         setTitle(article.title || '');
         setSlug(article.slug || slugify(article.title || ''));
+        setAuthorName(article.author_name || article.author || user?.name || '');
         setSummary(article.summary || article.excerpt || '');
         setCategoryId(article.category_id || '');
-        setDepartmentId(article.department_id || '');
+        setDepartmentId(article.department_id ? String(article.department_id) : '');
         setCoverImage(article.cover_image || article.featured_image || '');
         setContent(article.content || '');
         setStatus(article.status || 'draft');
@@ -94,9 +99,10 @@ export default function ArticleEditorModal({
         // Reset for new article
         setTitle('');
         setSlug('');
+        setAuthorName(user?.name || 'MCC Bureau Correspondent');
         setSummary('');
         setCategoryId('');
-        setDepartmentId(user?.department_id || '');
+        setDepartmentId(user?.department_id ? String(user.department_id) : '');
         setCoverImage('');
         setContent('');
         setStatus(isEditorial ? 'published' : 'draft');
@@ -193,7 +199,11 @@ export default function ArticleEditorModal({
       return;
     }
     if (!categoryId) {
-      setError('Please select a category for this dispatch.');
+      setError('Please select a broadsheet section / category for this dispatch.');
+      return;
+    }
+    if (!departmentId) {
+      setError('Please assign this dispatch to one of the 38 Department Bureaus.');
       return;
     }
 
@@ -203,8 +213,9 @@ export default function ArticleEditorModal({
         title: title.trim(),
         summary: summary.trim() || null,
         excerpt: summary.trim() || null,
+        author_name: authorName.trim() || user?.name || 'MCC Bureau Correspondent',
         category_id: parseInt(categoryId, 10),
-        department_id: departmentId ? parseInt(departmentId, 10) : null,
+        department_id: parseInt(departmentId, 10),
         cover_image: coverImage.trim() || null,
         content: content.trim(),
         status,
@@ -241,6 +252,35 @@ export default function ArticleEditorModal({
       setSubmitting(false);
     }
   };
+
+  // Immediate Delete with confirmation dialog
+  const handleDelete = async () => {
+    if (!article || !article.id) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete dispatch "${article.title}"? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setSubmitting(true);
+      await articleService.deleteArticle(article.id);
+      if (onSaved) onSaved();
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Failed to delete article dispatch.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Group departments by stream for broadsheet bureau selector
+  const aidedDepartments = departments.filter((d) => d.stream === 'Aided');
+  const sfsDepartments = departments.filter(
+    (d) => d.stream === 'Self-Financed' || d.stream === 'SFS'
+  );
+  const otherDepartments = departments.filter(
+    (d) => d.stream !== 'Aided' && d.stream !== 'Self-Financed' && d.stream !== 'SFS'
+  );
 
   if (!isOpen) return null;
 
@@ -349,21 +389,69 @@ export default function ArticleEditorModal({
             </div>
 
             <div>
-              <label className="block text-xs font-serif uppercase tracking-wider font-bold text-gray-800 mb-1">
-                Associated Department
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-serif uppercase tracking-wider font-bold text-gray-800">
+                  Target Department Bureau <span className="text-red-700">*</span>
+                </label>
+                <span className="text-[10px] font-serif text-[#C5A059] font-bold">
+                  38 Official Desks
+                </span>
+              </div>
               <select
+                required
                 value={departmentId}
                 onChange={(e) => setDepartmentId(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon focus:ring-1 focus:ring-mcc-maroon outline-none bg-white"
+                className="w-full px-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon focus:ring-1 focus:ring-mcc-maroon outline-none bg-white font-medium"
               >
-                <option value="">-- Institutional / General Campus --</option>
-                {departments.map((dept) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name} ({dept.code})
-                  </option>
-                ))}
+                <option value="">-- Assign to Department (Required) --</option>
+                <optgroup label="Aided Stream (Shift I) - 17 Departments">
+                  {aidedDepartments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name} ({dept.code})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Self-Financed Stream (Shift II) - 21 Departments">
+                  {sfsDepartments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name} ({dept.code})
+                    </option>
+                  ))}
+                </optgroup>
+                {otherDepartments.length > 0 && (
+                  <optgroup label="Other Campus Desks">
+                    {otherDepartments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name} ({dept.code})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
+            </div>
+          </div>
+
+          {/* Author / Byline Field */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-serif uppercase tracking-wider font-bold text-gray-800">
+                Author Byline / Desk Correspondent
+              </label>
+              <span className="text-[10px] text-gray-500 font-serif">
+                Public Broadsheet Byline
+              </span>
+            </div>
+            <div className="relative rounded-md shadow-2xs">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <User className="w-3.5 h-3.5 text-[#C5A059]" />
+              </div>
+              <input
+                type="text"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+                placeholder="e.g. Dr. K. Senthil Kumar / Bureau Editorial Board"
+                className="w-full pl-9 pr-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon focus:ring-1 focus:ring-mcc-maroon outline-none bg-white"
+              />
             </div>
           </div>
 
@@ -564,14 +652,28 @@ export default function ArticleEditorModal({
         {/* MODAL FOOTER */}
         {/* ============================================================== */}
         <div className="px-6 py-4 border-t border-mcc-maroon/15 bg-white flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="px-4 py-2 border border-gray-300 text-xs font-serif font-semibold text-gray-700 hover:bg-gray-50 rounded transition-colors"
-          >
-            Cancel
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="px-4 py-2 border border-gray-300 text-xs font-serif font-semibold text-gray-700 hover:bg-gray-50 rounded transition-colors"
+            >
+              Cancel
+            </button>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={submitting}
+                className="px-3.5 py-2 border border-red-300 text-xs font-serif font-bold text-red-700 hover:bg-red-50 rounded transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                title="Delete this dispatch permanently"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Dispatch</span>
+              </button>
+            )}
+          </div>
 
           <div className="flex items-center gap-3">
             <button

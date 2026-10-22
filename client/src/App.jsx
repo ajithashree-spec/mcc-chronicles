@@ -1,30 +1,38 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import BroadsheetSpinner from './components/common/BroadsheetSpinner';
 
-// Pages
+// Core Fast Eager Pages
 import Home from './pages/Home';
 import ArticleDetail from './pages/ArticleDetail';
-import CategoryArchive from './pages/CategoryArchive';
-import TagArchive from './pages/TagArchive';
-import DepartmentDirectory from './pages/DepartmentDirectory';
-import SearchResults from './pages/SearchResults';
-import CircularsExplorer from './pages/CircularsExplorer';
-import Gallery from './pages/Gallery';
-import Contact from './pages/Contact';
-import About from './pages/About';
-import Ethics from './pages/Ethics';
-import Unsubscribe from './pages/Unsubscribe';
 import Login from './pages/Login';
 import Unauthorized from './pages/Unauthorized';
-import Dashboard from './pages/Dashboard';
+
+// Heavy Lazy-Loaded Pages & Consoles (Task 126)
+const CategoryArchive = lazy(() => import('./pages/CategoryArchive'));
+const TagArchive = lazy(() => import('./pages/TagArchive'));
+const DepartmentDirectory = lazy(() => import('./pages/DepartmentDirectory'));
+const DepartmentDetail = lazy(() => import('./pages/DepartmentDetail'));
+const SearchResults = lazy(() => import('./pages/SearchResults'));
+const CircularsExplorer = lazy(() => import('./pages/CircularsExplorer'));
+const Gallery = lazy(() => import('./pages/Gallery'));
+const Contact = lazy(() => import('./pages/Contact'));
+const About = lazy(() => import('./pages/About'));
+const Ethics = lazy(() => import('./pages/Ethics'));
+const Unsubscribe = lazy(() => import('./pages/Unsubscribe'));
+const CampusMap = lazy(() => import('./pages/CampusMap'));
+const SubmitStory = lazy(() => import('./pages/SubmitStory'));
+const Archives = lazy(() => import('./pages/Archives'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
+      <Suspense fallback={<BroadsheetSpinner />}>
+        <Routes>
         {/* Public Broadsheet Routes */}
         <Route
           path="/"
@@ -40,6 +48,15 @@ export default function App() {
           element={
             <Layout>
               <ArticleDetail />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/news"
+          element={
+            <Layout>
+              <CategoryArchive defaultCategory="campus-news" />
             </Layout>
           }
         />
@@ -67,6 +84,15 @@ export default function App() {
           element={
             <Layout>
               <DepartmentDirectory />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/departments/:slug"
+          element={
+            <Layout>
+              <DepartmentDetail />
             </Layout>
           }
         />
@@ -134,7 +160,38 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/map"
+          element={
+            <Layout>
+              <CampusMap />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/submit-story"
+          element={
+            <ProtectedRoute allowedRoles={['super_admin', 'editor', 'reporter', 'faculty']}>
+              <Layout>
+                <SubmitStory />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/archives"
+          element={
+            <Layout>
+              <Archives />
+            </Layout>
+          }
+        />
+
         <Route path="/login" element={<Login />} />
+        <Route path="/admin/login" element={<Login />} />
+        <Route path="/superadmin/login" element={<Login />} />
 
         <Route
           path="/unauthorized"
@@ -145,25 +202,32 @@ export default function App() {
           }
         />
 
-        {/* Protected Editorial Desk / Admin Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={['super_admin', 'editor', 'reporter', 'faculty']}>
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
+        {/* 1. Unified Shared Admin Console (/admin): Accessible to editors & departmental staff */}
         <Route
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={['super_admin', 'editor', 'reporter', 'faculty']}>
-              <Layout>
-                <Dashboard />
-              </Layout>
+              <Dashboard isSuperAdmin={false} />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 2. Super Admin Master Governance Console (/superadmin): Exclusively for super_admin */}
+        <Route
+          path="/superadmin"
+          element={
+            <ProtectedRoute allowedRoles={['super_admin']}>
+              <Dashboard isSuperAdmin={true} />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Legacy /dashboard alias */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['super_admin', 'editor', 'reporter', 'faculty']}>
+              <Dashboard />
             </ProtectedRoute>
           }
         />
@@ -197,6 +261,7 @@ export default function App() {
           }
         />
       </Routes>
-    </AuthProvider>
-  );
+    </Suspense>
+  </AuthProvider>
+);
 }

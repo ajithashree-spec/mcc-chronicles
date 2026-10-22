@@ -42,15 +42,29 @@ const apiLimiter = rateLimit({
 });
 
 /**
- * Helmet middleware configured with cross-origin resource policy
- * allowing static media and client cross-origin consumption.
+ * Helmet middleware configured with cross-origin resource policy,
+ * X-Frame-Options, X-Content-Type-Options, and Referrer-Policy (Task 119).
  */
 const helmetMiddleware = helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  xFrameOptions: { action: 'sameorigin' },
+  xContentTypeOptions: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 });
+
+/**
+ * Custom middleware enforcing baseline security headers across all routes.
+ */
+function securityHeadersMiddleware(req, res, next) {
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+}
 
 module.exports = {
   authLimiter,
   apiLimiter,
   helmetMiddleware,
+  securityHeadersMiddleware,
 };

@@ -1,0 +1,30 @@
+{
+  "name": "The MCC Chronicles - Collegiate Broadsheet",
+  "short_name": "MCC Chronicles",
+  "description": "The Official Broadsheet of Record for Madras Christian College (Est. 1837). Live campus dispatches, scholarly archives, and official notices.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF7F2",
+  "theme_color": "#7B1113",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["news", "education", "magazines"]
+}

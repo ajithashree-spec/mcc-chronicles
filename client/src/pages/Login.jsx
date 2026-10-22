@@ -21,12 +21,20 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || '/admin';
 
   // If already authenticated, redirect
   React.useEffect(() => {
     if (isAuthenticated()) {
-      navigate(from, { replace: true });
+      const userStr = localStorage.getItem('mcc_user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      let target = from;
+      if (from === '/dashboard' || from === '/login' || from === '/' || from === '/admin') {
+        target = currentUser?.role === 'super_admin' ? '/superadmin' : '/admin';
+      } else if (from.startsWith('/superadmin') && currentUser?.role !== 'super_admin') {
+        target = '/admin';
+      }
+      navigate(target, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
 
@@ -41,8 +49,14 @@ export default function Login() {
 
     try {
       setSubmitting(true);
-      await login(email, password);
-      navigate(from, { replace: true });
+      const loggedUser = await login(email, password);
+      let targetPath = from;
+      if (from === '/dashboard' || from === '/login' || from === '/' || from === '/admin') {
+        targetPath = loggedUser?.role === 'super_admin' ? '/superadmin' : '/admin';
+      } else if (from.startsWith('/superadmin') && loggedUser?.role !== 'super_admin') {
+        targetPath = '/admin';
+      }
+      navigate(targetPath, { replace: true });
     } catch (err) {
       setError(err.message || 'Authentication failed. Please verify credentials.');
     } finally {

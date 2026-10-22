@@ -168,8 +168,7 @@ export default function TagArchive() {
                 <div className="h-48 overflow-hidden relative bg-gray-100">
                   <img
                     src={
-                      article.cover_image ||
-                      'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800'
+                      article.cover_image || '/images/mcc-campus-hero.jpg'
                     }
                     alt={article.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

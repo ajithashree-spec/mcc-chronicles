@@ -16,7 +16,10 @@ import {
   Sparkles,
   ChevronRight,
   BookOpen,
+  Mail,
 } from 'lucide-react';
+import AnalyticsVisualizer from './AnalyticsVisualizer';
+import NewsletterCampaignModal from './NewsletterCampaignModal';
 
 export default function DashboardOverview({
   onNavigateTab,
@@ -28,6 +31,7 @@ export default function DashboardOverview({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showNewsletterModal, setShowNewsletterModal] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -82,6 +86,14 @@ export default function DashboardOverview({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowNewsletterModal(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-mcc-maroon hover:bg-mcc-maroon-dark text-white text-xs font-serif font-bold uppercase tracking-wider rounded shadow-xs transition-colors"
+          >
+            <Mail className="w-3.5 h-3.5 text-mcc-gold" />
+            <span>Newsletter Campaign</span>
+          </button>
           <button
             type="button"
             onClick={fetchStats}
@@ -381,6 +393,17 @@ export default function DashboardOverview({
           )}
         </div>
       </div>
+
+      {/* ============================================================== */}
+      {/* 5. PHASE 6 ANALYTICS BREAKDOWN VISUALIZER (Tasks 111 & 112) */}
+      {/* ============================================================== */}
+      <AnalyticsVisualizer />
+
+      {/* 6. NEWSLETTER DISPATCH MODAL (Task 105) */}
+      <NewsletterCampaignModal
+        isOpen={showNewsletterModal}
+        onClose={() => setShowNewsletterModal(false)}
+      />
     </div>
   );
 }

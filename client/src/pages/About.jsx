@@ -46,6 +46,25 @@ export default function About() {
         </div>
       </header>
 
+      {/* AUTHENTIC MCC CAMPUS HERITAGE PANORAMA */}
+      <div className="mb-12 overflow-hidden rounded-lg border-2 border-mcc-maroon shadow-md">
+        <div className="relative aspect-[21/9] sm:aspect-[24/9] w-full overflow-hidden bg-gray-900">
+          <img
+            src="/images/mcc-campus-hero.jpg"
+            alt="Madras Christian College Iconic Main Quadrangle & Campus Grounds"
+            className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700 hd-broadsheet-photo"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-4 sm:p-6 text-white">
+            <span className="text-[10px] sm:text-xs font-serif uppercase tracking-[0.2em] text-mcc-gold font-bold">
+              Historic Tambaram Campus • Founded 1837
+            </span>
+            <p className="font-serif italic text-sm sm:text-base text-gray-200 mt-0.5">
+              The iconic Main Quadrangle & lush campus grounds of Madras Christian College
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 3. KEYSTONE EDITORIAL STATEMENT */}
       <div className="mb-12 p-6 sm:p-8 bg-mcc-paper border-l-4 border-mcc-maroon rounded-r-md shadow-xs">
         <Quote className="w-8 h-8 text-mcc-gold mb-2 opacity-80" />
@@ -104,6 +123,29 @@ export default function About() {
             <p>
               The legendary residential halls—Selaiyur, St. Thomas&rsquo;s, Bishop Heber, Martin, Margaret, and Barnes—form the bedrock of collegiate fraternity and debate. It is within these quadrangles that annual cultural anthems like DeepWoods and the fierce inter-hall forensic tournaments were forged.
             </p>
+            {/* AUTHENTIC PHOTO DUO */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3">
+              <div className="rounded border border-mcc-maroon/20 overflow-hidden shadow-xs">
+                <img
+                  src="/images/mcc-scrub-jungle.jpg"
+                  alt="Madras Christian College 365-Acre Scrub Jungle Tree Canopy"
+                  className="w-full h-44 object-cover object-center hd-broadsheet-photo"
+                />
+                <div className="p-2.5 bg-mcc-paper border-t border-mcc-maroon/10 text-[11px] text-gray-700 italic font-serif">
+                  The legendary scrub woodland tree canopy avenue in Tambaram
+                </div>
+              </div>
+              <div className="rounded border border-mcc-maroon/20 overflow-hidden shadow-xs">
+                <img
+                  src="/images/mcc-academic-quad.jpg"
+                  alt="Madras Christian College Historic Academic Block & Walkways"
+                  className="w-full h-44 object-cover object-center hd-broadsheet-photo"
+                />
+                <div className="p-2.5 bg-mcc-paper border-t border-mcc-maroon/10 text-[11px] text-gray-700 italic font-serif">
+                  Historic double-storey academic block & student pathways
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

@@ -221,9 +221,72 @@ async function deleteSubscriber(req, res, next) {
   }
 }
 
+/**
+ * Protected endpoint to compile and dispatch the Morning Quadrangle Digest.
+ * Roles: super_admin, editor. (Task 105)
+ */
+async function dispatchDigest(req, res, next) {
+  try {
+    const { generateDigestHtml } = require('../services/newsletterService');
+
+    // Fetch latest published articles
+    const [articles] = await pool.query(
+      `SELECT a.id, a.title, a.slug, a.summary, a.content, a.cover_image,
+              c.name AS category_name, u.name AS author_name, a.published_at
+       FROM articles a
+       LEFT JOIN categories c ON a.category_id = c.id
+       LEFT JOIN users u ON a.author_id = u.id
+       WHERE a.status = 'published'
+       ORDER BY a.published_at DESC, a.id DESC
+       LIMIT 5`
+    );
+
+    // Fetch active circulars
+    const [circulars] = await pool.query(
+      `SELECT id, title, circular_number FROM circulars WHERE is_active = true ORDER BY is_pinned DESC, publish_date DESC LIMIT 3`
+    );
+
+    // Count active subscribers
+    const [countRows] = await pool.query(
+      'SELECT COUNT(*) AS total FROM subscribers WHERE is_active = 1'
+    );
+    const recipientsCount = countRows[0]?.total || 0;
+
+    const digestHtml = generateDigestHtml({
+      articles,
+      circulars,
+    });
+
+    await logActivity({
+      userId: req.user ? req.user.id : null,
+      action: 'NEWSLETTER_DISPATCH',
+      entityType: 'newsletter',
+      entityId: null,
+      details: {
+        recipients_count: recipientsCount,
+        articles_count: articles.length,
+        circulars_count: circulars.length,
+      },
+      req,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Morning Quadrangle Digest compiled and dispatched to ${recipientsCount} active subscribers`,
+      recipientsCount,
+      articlesCount: articles.length,
+      circularsCount: circulars.length,
+      digestHtml,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   subscribe,
   unsubscribe,
   getSubscribers,
   deleteSubscriber,
+  dispatchDigest,
 };

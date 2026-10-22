@@ -41,11 +41,12 @@ export default function DepartmentDirectory() {
         setError(null);
         const res = await articleService.getDepartments();
         if (isMounted) {
-          if (res && Array.isArray(res.data)) {
-            setDepartments(res.data);
-          } else {
-            setDepartments([]);
-          }
+          const list = Array.isArray(res.data?.data)
+            ? res.data.data
+            : Array.isArray(res.data)
+            ? res.data
+            : [];
+          setDepartments(list);
         }
       } catch (err) {
         if (isMounted) {
@@ -68,13 +69,17 @@ export default function DepartmentDirectory() {
     const matchesSearch =
       dept.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       dept.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dept.head_of_department?.toLowerCase().includes(searchQuery.toLowerCase());
+      dept.head_of_department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      dept.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
     if (activeStream === 'All') return true;
 
-    // Stream-based categorization check
+    if (activeStream === 'Aided') return dept.stream === 'Aided';
+    if (activeStream === 'Self-Financed') return dept.stream === 'Self-Financed';
+
+    // Faculty-based categorization check
     const streamKeywords = STREAM_CATEGORIES[activeStream] || [];
     const deptName = dept.name || '';
     return streamKeywords.some((keyword) =>
@@ -120,18 +125,25 @@ export default function DepartmentDirectory() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Stream Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 text-xs font-bold">
-            {['All', 'Arts', 'Sciences', 'Commerce'].map((stream) => (
+            {[
+              { id: 'All', label: 'All Bureaus' },
+              { id: 'Aided', label: 'Aided (Shift I)' },
+              { id: 'Self-Financed', label: 'Self-Financed (Shift II)' },
+              { id: 'Arts', label: 'Faculty of Arts' },
+              { id: 'Sciences', label: 'Faculty of Sciences' },
+              { id: 'Commerce', label: 'Faculty of Commerce' },
+            ].map(({ id, label }) => (
               <button
-                key={stream}
+                key={id}
                 type="button"
-                onClick={() => setActiveStream(stream)}
-                className={`px-4 py-2 rounded transition-all whitespace-nowrap uppercase tracking-wider ${
-                  activeStream === stream
+                onClick={() => setActiveStream(id)}
+                className={`px-3.5 py-1.5 rounded transition-all whitespace-nowrap uppercase tracking-wider text-xs ${
+                  activeStream === id
                     ? 'bg-mcc-maroon text-white shadow-xs font-bold'
                     : 'bg-mcc-halfwhite/80 text-gray-700 hover:bg-mcc-maroon/10'
                 }`}
               >
-                {stream === 'All' ? 'All Faculties' : `Faculty of ${stream}`}
+                {label}
               </button>
             ))}
           </div>
