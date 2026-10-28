@@ -24,8 +24,8 @@ import {
 
 export default function CircularManager() {
   const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'super_admin';
-  const isEditorial = ['super_admin', 'editor'].includes(user?.role);
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'superadmin';
+  const isEditorial = ['super_admin', 'superadmin', 'editor', 'admin'].includes(user?.role);
 
   // Listing states
   const [circulars, setCirculars] = useState([]);
@@ -581,7 +581,7 @@ export default function CircularManager() {
                     onChange={(e) => setDepartmentId(e.target.value)}
                     className="w-full px-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon outline-none bg-white"
                   >
-                    <option value="">-- College Administration --</option>
+                    <option value="">ALL DEPARTMENTS</option>
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.name} ({d.code})

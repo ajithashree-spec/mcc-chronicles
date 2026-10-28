@@ -22,18 +22,14 @@ export default function AdminLayout({ activeTab, onTabChange, children, badgeCou
   const isSuper = isSuperAdmin || location.pathname.startsWith('/superadmin');
 
   const tabLabels = {
-    articles: 'Articles Desk',
-    gallery: 'Photo Gallery',
-    settings: 'Site Appearance & Branding',
-    categories: 'Columns & Categories',
-    departments: '38 Department Bureaus',
-    users: 'Staff & Roles Governance',
-    audit: 'System Health & Audit Logs',
-    backups: 'Data Backups & Exports',
     overview: 'System Overview & Metrics',
+    articles: 'Articles Desk',
+    gallery: 'Photo Gallery & Slideshow',
+    categories: 'Columns & Categories',
     circulars: 'Gazette & Circulars',
-    inquiries: 'Inquiries & Tips',
-    comments: 'Comments Moderation',
+    passwords: 'Change Administrative Passwords',
+    backups: 'Data Backups & Exports',
+    settings: 'Layout & Visual Parity Controls',
   };
 
   const activeLabel = tabLabels[activeTab] || 'Editorial Desk';

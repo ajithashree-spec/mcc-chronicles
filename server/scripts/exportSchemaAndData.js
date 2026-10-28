@@ -56,6 +56,7 @@ async function exportDatabase() {
       'contact_messages',
       'activity_logs',
       'site_settings',
+      'page_settings',
     ];
 
     const sortedTables = [

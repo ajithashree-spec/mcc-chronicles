@@ -96,27 +96,45 @@ async function seedDatabase() {
       );
     }
 
-    // 4. Seed Super Admin User (password: Admin@MCC2026)
-    console.log('[4/4] Seeding Default Admin User...');
-    const adminEmail = 'admin@mcc.edu.in';
+    // 4. Seed Standard Administrative Accounts
+    console.log('[4/4] Seeding Default Administrative Users...');
     const saltRounds = 10;
-    const passwordHash = await bcrypt.hash('Admin@MCC2026', saltRounds);
+    const defaultPasswordHash = await bcrypt.hash('root', saltRounds);
 
     const [deptRows] = await connection.query(
       "SELECT id FROM departments WHERE code = 'ENG-AID' LIMIT 1"
     );
     const adminDeptId = deptRows.length > 0 ? deptRows[0].id : null;
 
+    // Super Admin: superadmin
     await connection.query(
-      `INSERT INTO users (name, email, password_hash, role, department_id, is_active)
-       VALUES ('MCC Super Admin', ?, ?, 'super_admin', ?, true)
-       ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), role = VALUES(role), department_id = VALUES(department_id), is_active = true`,
-      [adminEmail, passwordHash, adminDeptId]
+      `INSERT INTO users (id, name, username, email, password_hash, role, department_id, is_active)
+       VALUES (99, 'MCC Super Administrator', 'superadmin', 'superadmin@mcc.edu.in', ?, 'superadmin', ?, true)
+       ON DUPLICATE KEY UPDATE 
+         username = 'superadmin', 
+         email = 'superadmin@mcc.edu.in', 
+         password_hash = VALUES(password_hash), 
+         role = 'superadmin', 
+         is_active = true`,
+      [defaultPasswordHash, adminDeptId]
+    );
+
+    // Editorial Admin: admin
+    await connection.query(
+      `INSERT INTO users (id, name, username, email, password_hash, role, department_id, is_active)
+       VALUES (1, 'MCC Editorial Administrator', 'admin', 'admin@mcc.edu.in', ?, 'admin', ?, true)
+       ON DUPLICATE KEY UPDATE 
+         username = 'admin', 
+         email = 'admin@mcc.edu.in', 
+         password_hash = VALUES(password_hash), 
+         role = 'admin', 
+         is_active = true`,
+      [defaultPasswordHash, adminDeptId]
     );
 
     console.log('--- Database Seeding Complete ---');
-    console.log('Default Admin Account: ' + adminEmail);
-    console.log('Default Admin Password: Admin@MCC2026');
+    console.log('Super Admin: username superadmin (password: root)');
+    console.log('Editorial Admin: username admin (password: root)');
     process.exit(0);
   } catch (error) {
     console.error('Seeding failed with error:', error);

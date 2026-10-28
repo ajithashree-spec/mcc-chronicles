@@ -6,14 +6,10 @@ import DashboardOverview from '../components/admin/DashboardOverview';
 import ArticlesDesk from '../components/admin/ArticlesDesk';
 import CircularManager from '../components/admin/CircularManager';
 import GalleryManager from '../components/admin/GalleryManager';
-import InquiriesManager from '../components/admin/InquiriesManager';
-import CommentsManager from '../components/admin/CommentsManager';
-import AuditLogExplorer from '../components/admin/AuditLogExplorer';
 import BackupConsole from '../components/admin/BackupConsole';
 import SettingsConsole from '../components/admin/SettingsConsole';
-import UserManager from '../components/admin/UserManager';
-import DepartmentManager from '../components/admin/DepartmentManager';
 import CategoryManager from '../components/admin/CategoryManager';
+import PasswordManager from '../components/admin/PasswordManager';
 import ArticleEditorModal from '../components/admin/ArticleEditorModal';
 
 export default function Dashboard({ isSuperAdmin = false }) {
@@ -26,7 +22,7 @@ export default function Dashboard({ isSuperAdmin = false }) {
 
   // Unified Admin (/admin): Valid tabs are strictly 'articles' and 'gallery'
   const validAdminTabs = ['articles', 'gallery'];
-  const defaultTab = isSuper ? 'settings' : 'articles';
+  const defaultTab = isSuper ? 'overview' : 'articles';
 
   const tabParam = searchParams.get('tab');
   const resolvedTab = isSuper
@@ -81,9 +77,7 @@ export default function Dashboard({ isSuperAdmin = false }) {
       {/* ============================================================== */}
       {isSuper && activeTab === 'settings' && <SettingsConsole />}
       {isSuper && activeTab === 'categories' && <CategoryManager />}
-      {isSuper && activeTab === 'departments' && <DepartmentManager />}
-      {isSuper && activeTab === 'users' && <UserManager />}
-      {isSuper && activeTab === 'audit' && <AuditLogExplorer />}
+      {isSuper && activeTab === 'passwords' && <PasswordManager />}
       {isSuper && activeTab === 'backups' && <BackupConsole />}
       {isSuper && activeTab === 'overview' && (
         <DashboardOverview
@@ -94,8 +88,6 @@ export default function Dashboard({ isSuperAdmin = false }) {
         />
       )}
       {isSuper && activeTab === 'circulars' && <CircularManager />}
-      {isSuper && activeTab === 'inquiries' && <InquiriesManager />}
-      {isSuper && activeTab === 'comments' && <CommentsManager />}
 
       {/* GLOBAL COMPOSE MODAL (Triggerable from Quick Action Row) */}
       <ArticleEditorModal

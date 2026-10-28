@@ -49,7 +49,21 @@ function requireRole(...roles) {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRole = req.user.role;
+
+    // Super Admin has master governance access across all administrative endpoints
+    if (userRole === 'superadmin' || userRole === 'super_admin') {
+      return next();
+    }
+
+    // Normalize roles to support both 'admin' and 'editor' as editorial desk handles
+    const normalizedAllowed = roles.flatMap((r) => {
+      if (r === 'editor' || r === 'admin') return ['editor', 'admin'];
+      if (r === 'super_admin' || r === 'superadmin') return ['super_admin', 'superadmin'];
+      return [r];
+    });
+
+    if (!normalizedAllowed.includes(userRole)) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden: You do not have permission to access this resource',

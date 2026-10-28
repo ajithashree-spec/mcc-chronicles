@@ -48,15 +48,19 @@ export function AuthProvider({ children }) {
   }, []);
 
   /**
-   * Authenticate with email & password.
-   * @param {string} email
-   * @param {string} password
+   * Authenticate with username/email, password, and optional portal context.
+   * @param {string} identifier - Username or Email
+   * @param {string} password - Password
+   * @param {string} [portal] - 'admin' or 'superadmin'
    * @returns {Promise<any>}
    */
-  const login = async (email, password) => {
+  const login = async (identifier, password, portal) => {
+    const cleanId = (identifier || '').trim().toLowerCase();
     const res = await api.post('/auth/login', {
-      email: email.trim().toLowerCase(),
+      username: cleanId,
+      email: cleanId,
       password,
+      portal,
     });
 
     if (res.token && res.user) {
@@ -90,14 +94,23 @@ export function AuthProvider({ children }) {
 
   /**
    * Verify if the active user possesses one of the required roles.
+   * Superadmin passes all administrative gates automatically.
    * @param {string|string[]} roles
    * @returns {boolean}
    */
   const hasRole = useCallback(
     (roles) => {
       if (!user || !user.role) return false;
+      const userRole = user.role;
+      if (userRole === 'superadmin' || userRole === 'super_admin') return true;
+
       const allowed = Array.isArray(roles) ? roles : [roles];
-      return allowed.includes(user.role);
+      const normalized = allowed.flatMap((r) => {
+        if (r === 'super_admin' || r === 'superadmin') return ['super_admin', 'superadmin'];
+        if (r === 'editor' || r === 'admin') return ['editor', 'admin'];
+        return [r];
+      });
+      return normalized.includes(userRole);
     },
     [user]
   );
@@ -113,6 +126,16 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
+  /**
+   * Set active authentication session from verified token and user.
+   */
+  const setAuthSession = useCallback((newToken, newUser) => {
+    localStorage.setItem('mcc_token', newToken);
+    localStorage.setItem('mcc_user', JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+  }, []);
+
   const value = {
     user,
     token,
@@ -120,6 +143,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     updateUser,
+    setAuthSession,
     isAuthenticated,
     hasRole,
   };

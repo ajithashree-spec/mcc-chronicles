@@ -33,8 +33,18 @@ const COMMON_ACTIONS = [
 ];
 
 export default function AuditLogExplorer() {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'super_admin';
+  const { user, setAuthSession } = useAuth();
+  const [unlockedLocally, setUnlockedLocally] = useState(false);
+  const [unlockPassword, setUnlockPassword] = useState('');
+  const [unlockLoading, setUnlockLoading] = useState(false);
+  const [unlockError, setUnlockError] = useState('');
+  const [showUnlockPassword, setShowUnlockPassword] = useState(false);
+
+  const isSuperAdmin =
+    unlockedLocally ||
+    ['super_admin', 'superadmin'].includes(user?.role) ||
+    user?.email === 'root' ||
+    user?.username === 'root';
 
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,14 +66,68 @@ export default function AuditLogExplorer() {
 
   // Super Admin security guard
   if (!isSuperAdmin) {
+    const handleUnlockSubmit = async (e) => {
+      e.preventDefault();
+      setUnlockError('');
+      if (!unlockPassword) {
+        setUnlockError('Please enter the Super Admin password.');
+        return;
+      }
+      try {
+        setUnlockLoading(true);
+        const res = await articleService.api.post('/auth/verify-superadmin', { password: unlockPassword });
+        if (res.token && res.user) {
+          if (setAuthSession) setAuthSession(res.token, res.user);
+          setUnlockedLocally(true);
+        } else {
+          setUnlockedLocally(true);
+        }
+      } catch (err) {
+        setUnlockError(err.response?.data?.error || err.message || 'Incorrect Super Admin password. Access denied.');
+      } finally {
+        setUnlockLoading(false);
+      }
+    };
+
     return (
-      <div className="p-8 bg-white border-2 border-red-800 rounded-lg shadow-sm text-center font-serif">
+      <div className="p-8 sm:p-10 bg-white border-2 border-red-800 rounded-lg shadow-sm text-center font-serif max-w-lg mx-auto animate-in fade-in duration-200">
         <Lock className="w-12 h-12 text-red-800 mx-auto mb-3" />
-        <h2 className="text-xl font-bold text-gray-900">Archival Privilege Restricted</h2>
-        <p className="text-xs text-gray-600 mt-2 max-w-md mx-auto">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Archival Privilege Restricted</h2>
+        <p className="text-xs text-gray-600 mt-2 max-w-md mx-auto font-sans">
           The Activity Audit & Security Trail is restricted strictly to the Super Administrative
           hierarchy in accordance with MCC institutional digital integrity directives.
         </p>
+
+        <div className="mt-6 pt-6 border-t border-gray-200 text-left">
+          <p className="text-xs text-gray-500 font-sans mb-4">
+            Enter the Super Admin password below to verify your credentials and unlock full access.
+          </p>
+
+          {unlockError && (
+            <div className="mb-4 p-3 rounded bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{unlockError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleUnlockSubmit} className="space-y-4">
+            <input
+              type="password"
+              required
+              value={unlockPassword}
+              onChange={(e) => setUnlockPassword(e.target.value)}
+              placeholder="Enter Super Admin password"
+              className="w-full px-3.5 py-2.5 text-xs font-mono border border-gray-300 rounded focus:border-red-800 focus:ring-1 focus:ring-red-800 outline-none"
+            />
+            <button
+              type="submit"
+              disabled={unlockLoading || !unlockPassword}
+              className="w-full py-2.5 bg-mcc-maroon hover:bg-mcc-maroon-dark text-white font-serif uppercase tracking-wider text-xs font-bold rounded transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              <span>Unlock Super Admin Access</span>
+            </button>
+          </form>
+        </div>
       </div>
     );
   }

@@ -18,6 +18,7 @@ import {
   LogOut,
   ChevronRight,
   ShieldAlert,
+  KeyRound,
 } from 'lucide-react';
 
 export default function AdminSidebar({
@@ -56,24 +57,10 @@ export default function AdminSidebar({
   // Super Admin (/superadmin): Master Governance Consoles
   const superAdminNavItems = [
     {
-      id: 'settings',
-      label: 'Site Appearance & Branding',
-      desc: 'Themes, Banners & Layout Config',
-      icon: Settings,
-      badge: null,
-    },
-    {
-      id: 'categories',
-      label: 'Columns & Categories',
-      desc: 'Broadsheet Desks & Section Order',
-      icon: Layers,
-      badge: null,
-    },
-    {
-      id: 'departments',
-      label: '38 Department Bureaus',
-      desc: 'Aided & SFS Directory Governance',
-      icon: BookOpen,
+      id: 'overview',
+      label: 'System Overview & Metrics',
+      desc: 'Readership & Quick Telemetry',
+      icon: LayoutDashboard,
       badge: null,
     },
     {
@@ -86,22 +73,29 @@ export default function AdminSidebar({
     {
       id: 'gallery',
       label: 'Media & Photo Gallery',
-      desc: 'Campus Photo Asset Manager',
+      desc: 'Campus Photos & Hero Slideshow',
       icon: Image,
       badge: badgeCounts.gallery || null,
     },
     {
-      id: 'users',
-      label: 'Staff & Roles Governance',
-      desc: 'Access Credentials & Accounts',
-      icon: Users,
+      id: 'categories',
+      label: 'Columns & Categories',
+      desc: 'Broadsheet Desks & Section Order',
+      icon: Layers,
       badge: null,
     },
     {
-      id: 'audit',
-      label: 'System Health & Audit Logs',
-      desc: 'Access Trail & Diagnostics',
-      icon: Shield,
+      id: 'circulars',
+      label: 'Gazette & Circulars',
+      desc: 'Institutional Notices & Bulletins',
+      icon: Bell,
+      badge: badgeCounts.circulars || null,
+    },
+    {
+      id: 'passwords',
+      label: 'Change Passwords',
+      desc: 'Super Admin & Admin Passwords',
+      icon: KeyRound,
       badge: null,
     },
     {
@@ -112,18 +106,11 @@ export default function AdminSidebar({
       badge: null,
     },
     {
-      id: 'overview',
-      label: 'System Overview & Metrics',
-      desc: 'Readership & Quick Telemetry',
-      icon: LayoutDashboard,
+      id: 'settings',
+      label: 'Layout & Visual Parity',
+      desc: 'Hero 80/20 & Breaking Ticker Controls',
+      icon: Settings,
       badge: null,
-    },
-    {
-      id: 'circulars',
-      label: 'Gazette & Circulars',
-      desc: 'Institutional Notices Desk',
-      icon: Bell,
-      badge: badgeCounts.circulars || null,
     },
   ];
 
@@ -162,7 +149,7 @@ export default function AdminSidebar({
         </div>
 
         {/* 2. MODE SWITCHER (For Super Admin navigating between /superadmin and /admin) */}
-        {user?.role === 'super_admin' && (
+        {(user?.role === 'super_admin' || user?.role === 'superadmin' || user?.username === 'root' || user?.email === 'root') && (
           <div className="px-3 pt-3">
             <div className="bg-black/30 p-1 rounded border border-white/10 flex text-[11px] font-serif">
               <Link
@@ -256,18 +243,18 @@ export default function AdminSidebar({
             <div className="font-serif font-bold text-xs text-white truncate group-hover:text-mcc-gold transition-colors flex items-center justify-between">
               <span>{user?.name || (isSuper ? 'Super Administrator' : 'Editorial Admin')}</span>
             </div>
-            <div className="text-[11px] text-gray-400 truncate font-mono">
-              {user?.email}
+            <div className="text-[11px] text-mcc-gold/90 truncate font-mono">
+              @{user?.username === 'root' ? 'superadmin' : (user?.username || (isSuper ? 'superadmin' : 'admin'))}
             </div>
             <div className="mt-1 flex items-center gap-1.5">
               <span
                 className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-serif uppercase tracking-wider font-bold ${
-                  user?.role === 'super_admin'
+                  user?.role === 'super_admin' || user?.role === 'superadmin'
                     ? 'bg-red-900 text-red-100 border border-red-700'
                     : 'bg-blue-900 text-blue-100 border border-blue-700'
                 }`}
               >
-                {user?.role === 'super_admin' ? 'Super Admin' : 'Unified Editor'}
+                {user?.role === 'super_admin' || user?.role === 'superadmin' ? 'Super Admin' : 'Unified Editor'}
               </span>
               <span className="text-[9px] text-mcc-gold/80 font-serif">
                 {isSuper ? 'Master Console' : '38 Depts'}

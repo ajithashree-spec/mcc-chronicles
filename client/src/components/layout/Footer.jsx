@@ -10,9 +10,11 @@ import {
   Compass,
   Layers,
 } from 'lucide-react';
+import { usePageSettings } from '../../context/PageSettingsContext';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { settings } = usePageSettings();
 
   return (
     <footer className="bg-[#581A20] text-[#FAF8F5] border-t-4 border-[#C5A059] font-sans mt-auto shadow-inner">
@@ -29,26 +31,31 @@ export default function Footer() {
               />
               <div>
                 <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#FAF8F5] tracking-tight leading-tight">
-                  Madras Christian College
+                  {settings.header_brand_title || 'Madras Christian College'}
                 </h3>
                 <span className="text-[10px] sm:text-[11px] font-sans font-bold tracking-[0.25em] text-[#C5A059] uppercase block mt-0.5">
-                  CAMPUS NEWS PORTAL
+                  {settings.header_brand_subtitle || 'CAMPUS NEWS PORTAL'}
                 </span>
               </div>
             </div>
 
             <p className="text-xs text-[#FAF8F5]/90 leading-relaxed font-serif">
-              An autonomous liberal arts and sciences institution affiliated with the University of Madras. Dedicated to academic excellence, investigative student journalism, and scientific inquiry in the 365-acre scrub jungle sanctuary.
+              {settings.footer_description ||
+                'An autonomous liberal arts and sciences institution affiliated with the University of Madras. Dedicated to academic excellence, investigative student journalism, and scientific inquiry in the 365-acre scrub jungle sanctuary.'}
             </p>
 
             <div className="space-y-1.5 text-xs text-[#FAF8F5]/90 pt-1">
               <div className="flex items-center gap-2">
                 <Award className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
-                <span className="font-medium">Autonomous Institution &bull; NAAC A++ Grade</span>
+                <span className="font-medium">
+                  {settings.footer_accreditation || 'Autonomous Institution • NAAC A++ Grade'}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
-                <span className="font-serif italic text-[#C5A059]">Motto: &quot;Lighted to Lighten&quot; • Est. 1837</span>
+                <span className="font-serif italic text-[#C5A059]">
+                  {settings.footer_motto || 'Motto: "Lighted to Lighten" • Est. 1837'}
+                </span>
               </div>
             </div>
           </div>
@@ -124,33 +131,40 @@ export default function Footer() {
             <div className="space-y-2.5 text-xs text-[#FAF8F5]/90 leading-relaxed">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
-                <span>
-                  Madras Christian College,
-                  <br />
-                  Tambaram East, Chennai - 600059,
-                  <br />
-                  Tamil Nadu, India
+                <span className="whitespace-pre-line">
+                  {settings.footer_address ||
+                    'Madras Christian College,\nTambaram East, Chennai - 600059,\nTamil Nadu, India'}
                 </span>
               </div>
 
               <div className="flex items-center gap-2.5 pt-1">
                 <Phone className="w-4 h-4 text-[#C5A059] shrink-0" />
-                <span className="font-mono text-[#FAF8F5]/85">+91 44 2239 0675</span>
+                <a
+                  href={`tel:${settings.footer_phone || '+914422390675'}`}
+                  className="font-mono text-[#FAF8F5]/85 hover:text-[#C5A059] transition-colors"
+                >
+                  {settings.footer_phone || '+91 44 2239 0675'}
+                </a>
               </div>
 
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#C5A059] shrink-0" />
-                <span className="font-mono text-[#FAF8F5]/85">principal@mcc.edu.in</span>
+                <a
+                  href={`mailto:${settings.footer_email || 'principal@mcc.edu.in'}`}
+                  className="font-mono text-[#FAF8F5]/85 hover:text-[#C5A059] transition-colors"
+                >
+                  {settings.footer_email || 'principal@mcc.edu.in'}
+                </a>
               </div>
 
               <div className="pt-2">
                 <a
-                  href="https://mcc.edu.in"
+                  href={settings.footer_college_url || 'https://mcc.edu.in'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#C5A059] hover:text-white transition-colors"
                 >
-                  <span>College Official Portal (mcc.edu.in)</span>
+                  <span>{settings.footer_college_label || 'College Official Portal (mcc.edu.in)'}</span>
                   <ExternalLink className="w-3 h-3 text-[#C5A059]" />
                 </a>
               </div>
@@ -163,7 +177,10 @@ export default function Footer() {
       <div className="border-t border-[#C5A059]/30 bg-[#0A1926] text-[11px] text-[#FAF8F5]/70 py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div>
-            &copy; {currentYear} <strong className="text-[#FAF8F5]">Madras Christian College</strong>. All rights reserved. Official Campus News Portal.
+            &copy; {currentYear}{' '}
+            <strong className="text-[#FAF8F5]">
+              {settings.footer_copyright || 'Madras Christian College. All rights reserved. Official Campus News Portal.'}
+            </strong>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 text-[#FAF8F5]/75">
             <Link to="/about" className="hover:text-[#C5A059] transition-colors">

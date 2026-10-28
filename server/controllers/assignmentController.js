@@ -7,7 +7,7 @@ const { logActivity } = require('../utils/logger');
  */
 async function getAssignments(req, res, next) {
   try {
-    const isEditorial = ['super_admin', 'editor'].includes(req.user.role);
+    const isEditorial = ['super_admin', 'superadmin', 'editor', 'admin'].includes(req.user.role);
     const { status, assigned_to } = req.query;
 
     const whereClauses = [];
@@ -164,7 +164,7 @@ async function updateAssignmentStatus(req, res, next) {
     }
 
     const assignment = existing[0];
-    const isEditorial = ['super_admin', 'editor'].includes(req.user.role);
+    const isEditorial = ['super_admin', 'superadmin', 'editor', 'admin'].includes(req.user.role);
     const isAssignee = req.user.id === assignment.assigned_to;
 
     if (!isEditorial && !isAssignee) {

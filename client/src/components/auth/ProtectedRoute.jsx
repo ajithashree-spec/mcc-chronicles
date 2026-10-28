@@ -36,7 +36,13 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (!isAuthenticated()) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    let loginTarget = '/login';
+    if (location.pathname.startsWith('/superadmin')) {
+      loginTarget = '/superadmin/login';
+    } else if (location.pathname.startsWith('/admin')) {
+      loginTarget = '/admin/login';
+    }
+    return <Navigate to={loginTarget} state={{ from: location }} replace />;
   }
 
   if (allowedRoles && !hasRole(allowedRoles)) {

@@ -31,6 +31,7 @@ export default function ArticlesDesk({ onComposeArticle }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Modal state
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -42,7 +43,7 @@ export default function ArticlesDesk({ onComposeArticle }) {
       setLoading(true);
       setError(null);
       const res = await articleService.getArticles({
-        limit: 50,
+        limit: 100,
         status: 'all',
       });
       const list = Array.isArray(res?.data)
@@ -97,8 +98,27 @@ export default function ArticlesDesk({ onComposeArticle }) {
     }
   };
 
-  // Filter articles by search query
+  // Status breakdown counts
+  const counts = {
+    all: articles.length,
+    draft: articles.filter((a) => a.status === 'draft').length,
+    published: articles.filter((a) => a.status === 'published').length,
+    in_review: articles.filter((a) => a.status === 'in_review' || a.status === 'under_review').length,
+    pitch: articles.filter((a) => a.status === 'pitch').length,
+  };
+
+  // Filter articles by status and search query
   const filteredArticles = articles.filter((art) => {
+    // 1. Status Filter
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'in_review') {
+        if (art.status !== 'in_review' && art.status !== 'under_review') return false;
+      } else if (art.status !== statusFilter) {
+        return false;
+      }
+    }
+
+    // 2. Search Query Filter
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
     const titleMatch = (art.title || '').toLowerCase().includes(q);
@@ -162,7 +182,39 @@ export default function ArticlesDesk({ onComposeArticle }) {
         </div>
       )}
 
-      {/* 2. DIRECT CRUD TABLE */}
+      {/* 2. STATUS FILTER TABS */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-serif font-bold">
+        {[
+          { id: 'all', label: 'All Dispatches', count: counts.all },
+          { id: 'published', label: 'Published', count: counts.published, badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300' },
+          { id: 'draft', label: 'Drafts', count: counts.draft, badgeColor: 'bg-amber-100 text-amber-900 border-amber-300' },
+        ].map((tab) => {
+          const isActive = statusFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setStatusFilter(tab.id)}
+              className={`px-3.5 py-2 rounded-md border transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                isActive
+                  ? 'bg-[#7B1113] text-white border-[#7B1113] shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-[#C5A059] hover:bg-[#FAF8F5]'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-sans border ${
+                  isActive ? 'bg-white/20 text-white border-white/30' : tab.badgeColor || 'bg-gray-100 text-gray-700 border-gray-200'
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 3. DIRECT CRUD TABLE */}
       <div className="bg-white border border-[#C5A059]/30 rounded-lg shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
@@ -170,7 +222,7 @@ export default function ArticlesDesk({ onComposeArticle }) {
               <tr className="bg-[#FAF8F5] border-b border-[#C5A059]/30 text-gray-800 font-serif font-bold uppercase tracking-wider text-[11px]">
                 <th className="py-3.5 px-4">Title</th>
                 <th className="py-3.5 px-4">Department</th>
-                <th className="py-3.5 px-4">Published Date</th>
+                <th className="py-3.5 px-4">Dispatch Date</th>
                 <th className="py-3.5 px-4 text-center">Status</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
@@ -184,18 +236,22 @@ export default function ArticlesDesk({ onComposeArticle }) {
                   </td>
                 </tr>
               ) : filteredArticles.length === 0 ? (
-                /* 3. Empty State */
+                /* Empty State */
                 <tr>
                   <td colSpan={5} className="py-12 px-4 text-center text-gray-600">
                     <FileText className="w-8 h-8 mx-auto text-gray-300 mb-2" />
                     <p className="font-bold text-sm text-gray-800">
-                      No dispatches authored yet. Click 'Compose New Dispatch' to publish one.
+                      {statusFilter === 'draft'
+                        ? 'No draft dispatches found.'
+                        : statusFilter === 'published'
+                        ? 'No published dispatches found.'
+                        : 'No dispatches found.'}
                     </p>
-                    {searchQuery && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        No articles matched query "{searchQuery}".
-                      </p>
-                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      {searchQuery
+                        ? `No dispatches matched query "${searchQuery}".`
+                        : "Click '+ COMPOSE NEW DISPATCH' to author a new article."}
+                    </p>
                   </td>
                 </tr>
               ) : (
@@ -203,15 +259,50 @@ export default function ArticlesDesk({ onComposeArticle }) {
                   const deptDisplay =
                     article.department_name
                       ? article.department_name.replace('Department of ', '')
-                      : article.department_code || 'General Campus';
+                      : article.department_code || 'ALL DEPARTMENTS';
 
-                  const dateDisplay = formatDate(article.published_at || article.created_at);
+                  const dateDisplay = formatDate(article.published_at || article.updated_at || article.created_at);
                   const isPublished = article.status === 'published';
+                  const isDraft = article.status === 'draft';
+
+                  let statusBadge = (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-sans font-bold uppercase tracking-wider bg-gray-50 text-gray-800 border border-gray-200">
+                      {article.status || 'Draft'}
+                    </span>
+                  );
+
+                  if (isPublished) {
+                    statusBadge = (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-sans font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        Published
+                      </span>
+                    );
+                  } else if (isDraft) {
+                    statusBadge = (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-sans font-bold uppercase tracking-wider bg-amber-50 text-amber-900 border border-amber-300 font-bold">
+                        Draft
+                      </span>
+                    );
+                  } else if (article.status === 'in_review' || article.status === 'under_review') {
+                    statusBadge = (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-sans font-bold uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-200">
+                        In Review
+                      </span>
+                    );
+                  } else if (article.status === 'pitch') {
+                    statusBadge = (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-sans font-bold uppercase tracking-wider bg-purple-50 text-purple-800 border border-purple-200">
+                        Story Pitch
+                      </span>
+                    );
+                  }
 
                   return (
                     <tr
                       key={article.id}
-                      className="hover:bg-[#FAF8F5] transition-colors group"
+                      className={`hover:bg-[#FAF8F5] transition-colors group ${
+                        isDraft ? 'bg-amber-50/30' : ''
+                      }`}
                     >
                       {/* 1. Title (headline & excerpt snippet) */}
                       <td className="py-3.5 px-4 max-w-sm sm:max-w-md">
@@ -232,22 +323,20 @@ export default function ArticlesDesk({ onComposeArticle }) {
                         </span>
                       </td>
 
-                      {/* 3. Published Date */}
+                      {/* 3. Dispatch Date */}
                       <td className="py-3.5 px-4 whitespace-nowrap text-gray-600 text-[11px]">
-                        {dateDisplay}
+                        {isDraft ? (
+                          <span className="text-amber-800 font-semibold">
+                            Draft ({dateDisplay})
+                          </span>
+                        ) : (
+                          dateDisplay
+                        )}
                       </td>
 
                       {/* 4. Status Badge */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-sans font-bold uppercase tracking-wider ${
-                            isPublished
-                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                              : 'bg-amber-50 text-amber-800 border border-amber-200'
-                          }`}
-                        >
-                          {isPublished ? 'Published' : 'Draft'}
-                        </span>
+                        {statusBadge}
                       </td>
 
                       {/* 5. Actions: Edit and Delete */}

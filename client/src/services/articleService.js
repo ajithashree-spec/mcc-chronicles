@@ -33,6 +33,24 @@ export const articleService = {
   },
 
   /**
+   * Fetch a single article by slug or numeric ID.
+   * @param {string|number} slugOrId
+   * @returns {Promise<{success: boolean, data: Object}>}
+   */
+  async getArticle(slugOrId) {
+    return api.get(`/articles/${encodeURIComponent(slugOrId)}`);
+  },
+
+  /**
+   * Fetch a single article by numeric ID.
+   * @param {number|string} id
+   * @returns {Promise<{success: boolean, data: Object}>}
+   */
+  async getArticleById(id) {
+    return api.get(`/articles/${encodeURIComponent(id)}`);
+  },
+
+  /**
    * Fetch all active categories.
    * @returns {Promise<{success: boolean, data: Array}>}
    */
@@ -422,7 +440,39 @@ export const articleService = {
   },
 
   /**
-   * Fetch system settings dictionary.
+   * Fetch public dynamic page content settings dictionary.
+   * @returns {Promise<{success: boolean, settings: Object}>}
+   */
+  async getPageSettings() {
+    return api.get('/settings/public');
+  },
+
+  /**
+   * Bulk update dynamic page content settings (Super Admin).
+   * @param {Object} data - Key-value dictionary of settings
+   * @returns {Promise<{success: boolean, message: string, settings?: Object}>}
+   */
+  async updatePageSettingsBulk(data) {
+    return api.put('/settings/bulk', data);
+  },
+
+  /**
+   * Upload setting media asset (slideshow image, seal, or logo).
+   * @param {File} file
+   * @returns {Promise<{success: boolean, url: string}>}
+   */
+  async uploadSettingMedia(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/settings/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Fetch system settings dictionary (legacy).
    * @returns {Promise<{success: boolean, settings: Object, data?: Object}>}
    */
   async getSettings() {
@@ -430,7 +480,7 @@ export const articleService = {
   },
 
   /**
-   * Update system settings dictionary (Super Admin).
+   * Update system settings dictionary (Super Admin legacy).
    * @param {Object} data
    * @returns {Promise<{success: boolean, message: string, updated?: Object}>}
    */
@@ -532,12 +582,28 @@ export const articleService = {
   },
 
   /**
-   * Change authenticated user password (Task 89).
-   * @param {Object} data - { currentPassword, newPassword }
-   * @returns {Promise<{success: boolean, message: string}>}
+   * Change administrative password with current-password verification.
+   * Endpoint: PUT /auth/change-password
+   * @param {Object} data - { targetRole: 'superadmin'|'admin', currentPassword, newPassword, confirmPassword }
+   * @returns {Promise<{success: boolean, message: string, data?: Object}>}
    */
   async changePassword(data) {
-    return api.put('/users/change-password', data);
+    return api.put('/auth/change-password', data);
+  },
+
+  /**
+   * Change Admin account password (Super Admin).
+   * @param {Object} data - { targetRole: 'admin', currentPassword, newPassword, confirmPassword }
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async changeAdminPassword(data) {
+    return api.put('/auth/change-password', {
+      targetRole: 'admin',
+      currentPassword: data.existingPassword || data.currentPassword,
+      newPassword: data.newPassword,
+      confirmPassword: data.confirmPassword,
+      ...data,
+    });
   },
 
   /**

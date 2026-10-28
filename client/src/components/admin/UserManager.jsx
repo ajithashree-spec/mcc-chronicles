@@ -23,6 +23,8 @@ import {
 
 const ROLE_BADGES = {
   super_admin: { label: 'Super Admin', color: 'bg-red-100 text-red-900 border-red-300' },
+  superadmin: { label: 'Super Admin', color: 'bg-red-100 text-red-900 border-red-300' },
+  admin: { label: 'Editorial Admin', color: 'bg-indigo-100 text-indigo-900 border-indigo-300' },
   editor: { label: 'Editor', color: 'bg-amber-100 text-amber-900 border-amber-300' },
   reporter: { label: 'Reporter', color: 'bg-emerald-100 text-emerald-900 border-emerald-300' },
   faculty: { label: 'Faculty', color: 'bg-blue-100 text-blue-900 border-blue-300' },
@@ -48,11 +50,14 @@ export default function UserManager() {
   const [addPassword, setAddPassword] = useState('');
   const [addRole, setAddRole] = useState('reporter');
   const [addDeptId, setAddDeptId] = useState('');
+  const [addUsername, setAddUsername] = useState('');
   const [addingStaff, setAddingStaff] = useState(false);
   const [addError, setAddError] = useState(null);
 
   // Edit User Modal
   const [editingUser, setEditingUser] = useState(null);
+  const [editUsername, setEditUsername] = useState('');
+  const [editPassword, setEditPassword] = useState('');
   const [editRole, setEditRole] = useState('');
   const [editDeptId, setEditDeptId] = useState('');
   const [editActive, setEditActive] = useState(true);
@@ -121,6 +126,7 @@ export default function UserManager() {
 
       await articleService.createUser({
         name: addName.trim(),
+        username: addUsername.trim() || undefined,
         email: addEmail.trim(),
         password: addPassword,
         role: addRole,
@@ -130,6 +136,7 @@ export default function UserManager() {
       setNotification(`Staff contributor '${addName.trim()}' added successfully.`);
       setIsAddModalOpen(false);
       setAddName('');
+      setAddUsername('');
       setAddEmail('');
       setAddPassword('');
       setAddRole('reporter');
@@ -145,6 +152,8 @@ export default function UserManager() {
 
   const handleOpenEdit = (targetUser) => {
     setEditingUser(targetUser);
+    setEditUsername(targetUser.username || '');
+    setEditPassword('');
     setEditRole(targetUser.role || 'reporter');
     setEditDeptId(targetUser.department_id ? String(targetUser.department_id) : '');
     setEditActive(Boolean(targetUser.is_active));
@@ -158,13 +167,25 @@ export default function UserManager() {
       setUpdatingStaff(true);
       setEditError(null);
 
-      await articleService.updateUser(editingUser.id, {
+      const payload = {
+        username: editUsername.trim(),
         role: editRole,
         department_id: editDeptId ? parseInt(editDeptId, 10) : null,
         is_active: editActive,
-      });
+      };
 
-      setNotification(`Staff record for '${editingUser.name}' updated successfully.`);
+      if (editPassword && editPassword.trim()) {
+        if (editPassword.trim().length < 4) {
+          setEditError('New password must be at least 4 characters long.');
+          setUpdatingStaff(false);
+          return;
+        }
+        payload.password = editPassword.trim();
+      }
+
+      await articleService.updateUser(editingUser.id, payload);
+
+      setNotification(`Credentials & record for '${editingUser.name}' updated successfully.`);
       setEditingUser(null);
       fetchUsers();
     } catch (err) {
@@ -228,7 +249,7 @@ export default function UserManager() {
           className="inline-flex items-center gap-2 px-4 py-2 bg-mcc-maroon hover:bg-mcc-maroon-dark text-white font-serif uppercase tracking-wider text-xs font-bold rounded shadow-xs transition-colors shrink-0"
         >
           <UserPlus className="w-4 h-4 text-mcc-gold" />
-          <span>Add Staff Contributor</span>
+          <span>Add Admin / Staff Member</span>
         </button>
       </div>
 
@@ -258,7 +279,8 @@ export default function UserManager() {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 text-xs font-serif font-bold">
             {[
               { id: 'all', label: 'All Roles' },
-              { id: 'super_admin', label: 'Super Admin' },
+              { id: 'superadmin', label: 'Super Admin' },
+              { id: 'admin', label: 'Editorial Admins' },
               { id: 'editor', label: 'Editors' },
               { id: 'reporter', label: 'Reporters' },
               { id: 'faculty', label: 'Faculty' },
@@ -367,6 +389,11 @@ export default function UserManager() {
                             <span className="text-[11px] text-gray-500 font-sans block">
                               {staff.email}
                             </span>
+                            {staff.username && (
+                              <span className="text-[10px] text-mcc-navy font-mono font-bold block">
+                                Username: @{staff.username}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -516,6 +543,22 @@ export default function UserManager() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-800 mb-1">
+                  Login Username (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={addUsername}
+                  onChange={(e) => setAddUsername(e.target.value)}
+                  placeholder="e.g. admin2, samuel_editor (defaults to email prefix)"
+                  className="w-full px-3 py-2 text-xs font-mono border border-gray-300 rounded focus:border-mcc-maroon outline-none"
+                />
+                <span className="text-[10px] text-gray-500 font-serif mt-0.5 block">
+                  Staff member can use this username or their email to log into the administrative portal.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-800 mb-1">
                   Temporary Access Password <span className="text-red-700">*</span>
                 </label>
                 <input
@@ -537,12 +580,13 @@ export default function UserManager() {
                   <select
                     value={addRole}
                     onChange={(e) => setAddRole(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:border-mcc-maroon outline-none bg-white"
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:border-mcc-maroon outline-none bg-white font-medium"
                   >
-                    <option value="reporter">Staff Reporter</option>
+                    <option value="admin">Editorial Admin (Full Administrative Control)</option>
                     <option value="editor">Senior Editor</option>
+                    <option value="reporter">Staff Reporter</option>
                     <option value="faculty">Faculty Liaison</option>
-                    <option value="super_admin">Super Admin</option>
+                    <option value="superadmin">Super Admin</option>
                   </select>
                 </div>
 
@@ -555,7 +599,7 @@ export default function UserManager() {
                     onChange={(e) => setAddDeptId(e.target.value)}
                     className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:border-mcc-maroon outline-none bg-white"
                   >
-                    <option value="">-- Central / General --</option>
+                    <option value="">ALL DEPARTMENTS</option>
                     {departments.map((dept) => (
                       <option key={dept.id} value={dept.id}>
                         {dept.name} ({dept.code})
@@ -617,17 +661,51 @@ export default function UserManager() {
             <form onSubmit={handleUpdateStaff} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-800 mb-1">
+                  Login Username <span className="text-red-700">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  placeholder="e.g. root, admin, editor_desk"
+                  className="w-full px-3 py-2 text-xs font-mono border border-gray-300 rounded focus:border-mcc-navy outline-none bg-white font-semibold"
+                />
+                <span className="text-[10px] text-gray-500 mt-0.5 block font-serif">
+                  Used by staff/admin to log into the administrative portal.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-800 mb-1">
+                  Set New Password (Optional)
+                </label>
+                <input
+                  type="password"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="Leave blank to keep unchanged (min 4 chars)"
+                  className="w-full px-3 py-2 text-xs font-mono border border-gray-300 rounded focus:border-mcc-navy outline-none bg-white"
+                />
+                <span className="text-[10px] text-gray-500 mt-0.5 block font-serif">
+                  Enter a new security password if you wish to change or reset this user's password.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-800 mb-1">
                   Editorial Role
                 </label>
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:border-mcc-navy outline-none bg-white"
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:border-mcc-navy outline-none bg-white font-medium"
                 >
-                  <option value="reporter">Staff Reporter</option>
+                  <option value="admin">Editorial Admin</option>
                   <option value="editor">Senior Editor</option>
+                  <option value="reporter">Staff Reporter</option>
                   <option value="faculty">Faculty Liaison</option>
-                  <option value="super_admin">Super Admin</option>
+                  <option value="superadmin">Super Admin</option>
                 </select>
               </div>
 
@@ -640,7 +718,7 @@ export default function UserManager() {
                   onChange={(e) => setEditDeptId(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:border-mcc-navy outline-none bg-white"
                 >
-                  <option value="">-- Central Administration / General --</option>
+                  <option value="">ALL DEPARTMENTS</option>
                   {departments.map((dept) => (
                     <option key={dept.id} value={dept.id}>
                       {dept.name} ({dept.code})

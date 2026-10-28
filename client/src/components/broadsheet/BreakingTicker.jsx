@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { usePageSettings } from '../../context/PageSettingsContext';
 
 const DEFAULT_BULLETINS = [
   {
@@ -17,8 +18,14 @@ const DEFAULT_BULLETINS = [
   },
 ];
 
-export default function BreakingTicker({ items = [] }) {
-  const tickerItems = items && items.length > 0 ? items : DEFAULT_BULLETINS;
+export default function BreakingTicker({ items = [], speedMs = null, enabled = true }) {
+  const { settings } = usePageSettings();
+  const isEnabled = enabled !== undefined ? enabled : settings.ticker_enabled;
+
+  const effectiveSpeed = Number(speedMs) || Number(settings.ticker_speed_ms) || 4500;
+  const configItems = Array.isArray(settings.ticker_items) && settings.ticker_items.length > 0 ? settings.ticker_items : DEFAULT_BULLETINS;
+  const tickerItems = items && items.length > 0 ? items : configItems;
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -27,10 +34,10 @@ export default function BreakingTicker({ items = [] }) {
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % tickerItems.length);
-    }, 4500);
+    }, effectiveSpeed);
 
     return () => clearInterval(interval);
-  }, [isPaused, tickerItems.length]);
+  }, [isPaused, tickerItems.length, effectiveSpeed]);
 
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev - 1 + tickerItems.length) % tickerItems.length);
@@ -39,6 +46,8 @@ export default function BreakingTicker({ items = [] }) {
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % tickerItems.length);
   };
+
+  if (!isEnabled) return null;
 
   const active = tickerItems[currentIndex] || tickerItems[0];
   if (!active) return null;

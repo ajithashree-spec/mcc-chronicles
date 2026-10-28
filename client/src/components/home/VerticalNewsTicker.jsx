@@ -1,29 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronUp, ChevronDown, Clock, Newspaper, ArrowRight } from 'lucide-react';
+import { ChevronUp, ChevronDown, Calendar, Newspaper, ArrowRight } from 'lucide-react';
 
 /**
- * Helper to format relative or short publication time.
+ * Format publication date into authentic collegiate dispatch date (e.g. 'Oct 26, 2026').
+ * Strictly uses authentic dispatch date without relative time counters.
  */
-function formatRelativeTime(dateStr) {
-  if (!dateStr) return 'Recent';
+function formatDispatchDate(dateStr) {
+  if (!dateStr) return '';
   try {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHour = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHour / 24);
-
-    if (diffMin < 1) return 'Just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffHour < 24) return `${diffHour}h ago`;
-    if (diffDay < 7) return `${diffDay}d ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   } catch {
-    return 'Recent';
+    return '';
   }
+}
+
+/**
+ * Authentic collegiate broadsheet byline.
+ */
+function formatByline(authorName, departmentName) {
+  if (!authorName) {
+    return departmentName ? `${departmentName} Desk` : 'Editorial Bureau';
+  }
+  const clean = String(authorName).trim();
+  const lower = clean.toLowerCase();
+  if (lower.includes('root') || lower === 'admin' || lower === 'administrator') {
+    return departmentName ? `${departmentName} Desk` : 'Editorial Bureau';
+  }
+  return clean;
 }
 
 /**
@@ -164,7 +172,8 @@ export default function VerticalNewsTicker({ articles = [] }) {
         <div className="flex-1 flex flex-col justify-between gap-2 overflow-hidden py-1">
           {feedArticles.map((article) => {
             const catLabel = article.category_name || article.category || 'Dispatch';
-            const timeAgo = formatRelativeTime(article.published_at || article.created_at);
+            const dispatchDate = formatDispatchDate(article.published_at || article.created_at);
+            const byline = formatByline(article.author_name, article.department_name);
 
             return (
               <div key={article.id} className="flex-1 flex flex-col min-h-0">
@@ -177,10 +186,12 @@ export default function VerticalNewsTicker({ articles = [] }) {
                       <span className="px-1.5 py-0.5 bg-[#7B1113]/10 text-[#7B1113] font-bold uppercase tracking-wider rounded">
                         {catLabel}
                       </span>
-                      <span className="text-gray-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-[#C5A059]" />
-                        {timeAgo}
-                      </span>
+                      {dispatchDate && (
+                        <span className="text-gray-500 flex items-center gap-1 font-serif text-[10px]">
+                          <Calendar className="w-3 h-3 text-[#C5A059]" />
+                          {dispatchDate}
+                        </span>
+                      )}
                     </div>
 
                     <h4 className="font-serif text-xs sm:text-sm font-bold text-[#0F2537] group-hover:text-[#7B1113] transition-colors line-clamp-2 leading-snug">
@@ -189,8 +200,8 @@ export default function VerticalNewsTicker({ articles = [] }) {
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] text-gray-500 font-sans mt-1.5 pt-1.5 border-t border-gray-100">
-                    <span className="truncate max-w-[130px] text-gray-600">
-                      By {article.author_name || 'MCC Desk'}
+                    <span className="truncate max-w-[140px] text-gray-600 font-serif">
+                      By {byline}
                     </span>
                     <span className="text-[#7B1113] font-semibold flex items-center gap-0.5 group-hover:underline">
                       <span>Read</span>
@@ -218,7 +229,8 @@ export default function VerticalNewsTicker({ articles = [] }) {
           >
             {displayList.map((article, idx) => {
               const catLabel = article.category_name || article.category || 'Dispatch';
-              const timeAgo = formatRelativeTime(article.published_at || article.created_at);
+              const dispatchDate = formatDispatchDate(article.published_at || article.created_at);
+              const byline = formatByline(article.author_name, article.department_name);
 
               return (
                 <div
@@ -234,15 +246,17 @@ export default function VerticalNewsTicker({ articles = [] }) {
                     className="h-full bg-white hover:bg-[#FAF8F5] border border-gray-200 hover:border-[#C5A059] p-2.5 sm:p-3 rounded-md transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between group"
                   >
                     <div>
-                      {/* Category & Timestamp */}
+                      {/* Category & Dispatch Date */}
                       <div className="flex items-center justify-between text-[10px] font-sans mb-1">
                         <span className="px-1.5 py-0.5 bg-[#7B1113]/10 text-[#7B1113] font-bold uppercase tracking-wider rounded">
                           {catLabel}
                         </span>
-                        <span className="text-gray-400 flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-[#C5A059]" />
-                          {timeAgo}
-                        </span>
+                        {dispatchDate && (
+                          <span className="text-gray-500 flex items-center gap-1 font-serif text-[10px]">
+                            <Calendar className="w-3 h-3 text-[#C5A059]" />
+                            {dispatchDate}
+                          </span>
+                        )}
                       </div>
 
                       {/* Headline (2-line clamp) */}
@@ -253,8 +267,8 @@ export default function VerticalNewsTicker({ articles = [] }) {
 
                     {/* Byline & Read Link */}
                     <div className="flex items-center justify-between text-[11px] text-gray-500 font-sans mt-1.5 pt-1.5 border-t border-gray-100">
-                      <span className="truncate max-w-[130px] text-gray-600">
-                        By {article.author_name || 'MCC Desk'}
+                      <span className="truncate max-w-[140px] text-gray-600 font-serif">
+                        By {byline}
                       </span>
                       <span className="text-[#7B1113] font-semibold flex items-center gap-0.5 group-hover:underline">
                         <span>Read</span>

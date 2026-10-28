@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { PageSettingsProvider } from './context/PageSettingsContext';
 import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import BroadsheetSpinner from './components/common/BroadsheetSpinner';
@@ -31,8 +32,9 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 export default function App() {
   return (
     <AuthProvider>
-      <Suspense fallback={<BroadsheetSpinner />}>
-        <Routes>
+      <PageSettingsProvider>
+        <Suspense fallback={<BroadsheetSpinner />}>
+          <Routes>
         {/* Public Broadsheet Routes */}
         <Route
           path="/"
@@ -190,8 +192,8 @@ export default function App() {
         />
 
         <Route path="/login" element={<Login />} />
-        <Route path="/admin/login" element={<Login />} />
-        <Route path="/superadmin/login" element={<Login />} />
+        <Route path="/admin/login" element={<Login portal="admin" />} />
+        <Route path="/superadmin/login" element={<Login portal="superadmin" />} />
 
         <Route
           path="/unauthorized"
@@ -202,21 +204,21 @@ export default function App() {
           }
         />
 
-        {/* 1. Unified Shared Admin Console (/admin): Accessible to editors & departmental staff */}
+        {/* 1. Unified Shared Admin Console (/admin): Accessible to editors & admin staff */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute allowedRoles={['super_admin', 'editor', 'reporter', 'faculty']}>
+            <ProtectedRoute allowedRoles={['admin', 'editor', 'superadmin', 'super_admin', 'reporter', 'faculty']}>
               <Dashboard isSuperAdmin={false} />
             </ProtectedRoute>
           }
         />
 
-        {/* 2. Super Admin Master Governance Console (/superadmin): Exclusively for super_admin */}
+        {/* 2. Super Admin Master Governance Console (/superadmin): Exclusively for superadmin */}
         <Route
           path="/superadmin"
           element={
-            <ProtectedRoute allowedRoles={['super_admin']}>
+            <ProtectedRoute allowedRoles={['superadmin', 'super_admin']}>
               <Dashboard isSuperAdmin={true} />
             </ProtectedRoute>
           }
@@ -226,7 +228,7 @@ export default function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['super_admin', 'editor', 'reporter', 'faculty']}>
+            <ProtectedRoute allowedRoles={['admin', 'editor', 'superadmin', 'super_admin']}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -262,6 +264,7 @@ export default function App() {
         />
       </Routes>
     </Suspense>
+  </PageSettingsProvider>
   </AuthProvider>
 );
 }

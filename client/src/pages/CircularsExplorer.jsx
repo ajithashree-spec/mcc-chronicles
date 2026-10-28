@@ -219,7 +219,7 @@ export default function CircularsExplorer() {
               onChange={(e) => handleDeptChange(e.target.value)}
               className="px-3 py-2 bg-mcc-paper/40 border border-gray-300 rounded text-xs font-serif text-gray-800 focus:outline-hidden focus:border-mcc-navy"
             >
-              <option value="">All Issuing Departments</option>
+              <option value="">ALL DEPARTMENTS</option>
               {departments.map((dept) => (
                 <option key={dept.id} value={dept.id}>
                   {dept.name} ({dept.code})

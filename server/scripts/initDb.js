@@ -48,7 +48,7 @@ async function initDatabase() {
         name VARCHAR(150) NOT NULL,
         email VARCHAR(191) NOT NULL UNIQUE,
         password_hash VARCHAR(255) NOT NULL,
-        role ENUM('super_admin', 'editor', 'reporter', 'faculty') DEFAULT 'reporter',
+        role VARCHAR(50) DEFAULT 'reporter',
         department_id INT DEFAULT NULL,
         avatar_url VARCHAR(255) DEFAULT NULL,
         bio TEXT DEFAULT NULL,
@@ -389,35 +389,64 @@ async function initDatabase() {
     }
     console.log(`[OFFICIAL MCC DEPARTMENTS] Successfully synced all ${OFFICIAL_DEPARTMENTS.length} official departments.`);
 
-    // 21. Seed/Sync Standard Roles: Super Admin & Unified Admin Handle
+    // 21. Seed/Sync Standard Roles: Super Admin (superadmin) and Editorial Admin (admin)
     console.log('[USER CONSOLIDATION] Verifying standard accounts...');
-    const superAdminPasswordHash = await bcrypt.hash('Admin@MCC2026', 10);
+    const superAdminPasswordHash = await bcrypt.hash('root', 10);
+    const adminPasswordHash = await bcrypt.hash('root', 10);
     const editorPasswordHash = await bcrypt.hash('Editor@MCC2026', 10);
 
+    // Seed Standardized Super Admin Account (username: superadmin, role: superadmin)
     await connection.query(
-      `INSERT INTO users (name, email, password_hash, role, bio, is_active)
-       VALUES ('MCC Super Administrator', 'admin@mcc.edu.in', ?, 'super_admin', 'Master Governance & Publications Administrator', 1)
+      `INSERT INTO users (id, name, username, email, password_hash, role, bio, is_active)
+       VALUES (99, 'MCC Super Administrator', 'superadmin', 'superadmin@mcc.edu.in', ?, 'superadmin', 'Master Super Administrative Control (Est. 1837)', 1)
        ON DUPLICATE KEY UPDATE
          name = VALUES(name),
+         username = 'superadmin',
+         email = 'superadmin@mcc.edu.in',
          password_hash = VALUES(password_hash),
-         role = 'super_admin',
+         role = 'superadmin',
          bio = VALUES(bio),
          is_active = 1`,
       [superAdminPasswordHash]
     );
 
+    // Seed Standardized Editorial Admin Account (username: admin, role: admin)
     await connection.query(
-      `INSERT INTO users (name, email, password_hash, role, bio, is_active)
-       VALUES ('MCC Editorial Bureau Admin', 'editor@mcc.edu.in', ?, 'editor', 'Unified Department Editorial & Dispatch Bureau', 1)
+      `INSERT INTO users (id, name, username, email, password_hash, role, bio, is_active)
+       VALUES (1, 'MCC Editorial Administrator', 'admin', 'admin@mcc.edu.in', ?, 'admin', 'Master Editorial & Publications Administrator', 1)
        ON DUPLICATE KEY UPDATE
          name = VALUES(name),
+         username = 'admin',
+         email = 'admin@mcc.edu.in',
          password_hash = VALUES(password_hash),
-         role = 'editor',
+         role = 'admin',
          bio = VALUES(bio),
          is_active = 1`,
-      [editorPasswordHash]
+      [adminPasswordHash]
     );
-    console.log('[USER CONSOLIDATION] Seeded admin@mcc.edu.in (super_admin) and editor@mcc.edu.in (editor).');
+
+    console.log('[USER CONSOLIDATION] Seeded superadmin (superadmin) and admin (admin).');
+
+    // 22. Seed/Sync Dynamic Page Settings (Task: Complete Dynamic Content Editing)
+    console.log('[PAGE SETTINGS] Initializing page_settings table & defaults...');
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS page_settings (
+        \`key\` VARCHAR(100) PRIMARY KEY,
+        \`value\` LONGTEXT NOT NULL,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    const { DEFAULT_PAGE_SETTINGS } = require('./initPageSettings');
+    for (const [key, val] of Object.entries(DEFAULT_PAGE_SETTINGS)) {
+      await connection.query(
+        `INSERT INTO page_settings (\`key\`, \`value\`)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`)`,
+        [key, val]
+      );
+    }
+    console.log('[PAGE SETTINGS] Successfully synced dynamic page settings.');
 
     console.log('All schema tables successfully initialized!');
   } catch (error) {

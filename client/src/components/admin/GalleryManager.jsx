@@ -24,7 +24,7 @@ import {
 
 export default function GalleryManager() {
   const { user } = useAuth();
-  const isEditorial = ['super_admin', 'editor'].includes(user?.role);
+  const isEditorial = ['super_admin', 'superadmin', 'editor', 'admin'].includes(user?.role);
 
   // Listing states
   const [items, setItems] = useState([]);
@@ -576,7 +576,7 @@ export default function GalleryManager() {
                     onChange={(e) => setDepartmentId(e.target.value)}
                     className="w-full px-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon outline-none bg-white"
                   >
-                    <option value="">-- General Campus Heritage --</option>
+                    <option value="">ALL DEPARTMENTS</option>
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.name} ({d.code})

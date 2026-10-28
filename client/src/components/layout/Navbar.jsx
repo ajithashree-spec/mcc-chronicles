@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import SearchModal from '../search/SearchModal';
 import articleService from '../../services/articleService';
+import { usePageSettings } from '../../context/PageSettingsContext';
 
 // Fallback Authentic 17 Aided Stream Departments (Shift I)
 const AIDED_DEPARTMENTS_STATIC = [
@@ -64,6 +65,7 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
   const { user, isAuthenticated } = useAuth();
+  const { settings } = usePageSettings();
 
   // Multi-tier Desktop Dropdown state
   const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
@@ -85,6 +87,21 @@ export default function Navbar() {
 
   // Dynamic formatted date
   const [currentDateStr, setCurrentDateStr] = useState('');
+
+  const displayDate = React.useMemo(() => {
+    const now = new Date();
+    if (settings.header_date_mode === 'short') {
+      return now.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+    if (settings.header_date_mode === 'iso') {
+      return now.toISOString().split('T')[0];
+    }
+    return currentDateStr || 'Wednesday, October 14, 2026';
+  }, [settings.header_date_mode, currentDateStr]);
 
   useEffect(() => {
     if (largeText) {
@@ -209,11 +226,11 @@ export default function Navbar() {
           <div className="flex items-center gap-3 text-[#FAF8F5] text-[11px]">
             <span className="flex items-center gap-1.5 text-[#FAF8F5] font-semibold uppercase tracking-wider">
               <Calendar className="w-3.5 h-3.5 text-[#C5A059]" />
-              {currentDateStr || 'Wednesday, October 14, 2026'}
+              {displayDate}
             </span>
             <span className="hidden md:inline text-[#C5A059]">•</span>
             <span className="hidden md:inline text-[#FAF8F5]/80 font-medium">
-              Autonomous Institution &bull; Affiliated to University of Madras &bull; NAAC A++
+              {settings.header_edition_text || 'Autonomous Institution • Affiliated to University of Madras • NAAC A++'}
             </span>
           </div>
 
@@ -292,10 +309,10 @@ export default function Navbar() {
               />
               <div className="flex flex-col justify-center">
                 <span className="font-serif font-bold text-xl sm:text-2xl text-[#FAF8F5] tracking-tight leading-none group-hover:text-[#C5A059] transition-colors">
-                  Madras Christian College
+                  {settings.header_brand_title || 'Madras Christian College'}
                 </span>
                 <span className="text-[10px] sm:text-[11px] font-sans font-bold tracking-[0.25em] text-[#C5A059] uppercase block mt-1">
-                  CAMPUS NEWS PORTAL
+                  {settings.header_brand_subtitle || 'CAMPUS NEWS PORTAL'}
                 </span>
               </div>
             </Link>

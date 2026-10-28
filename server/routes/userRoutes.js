@@ -4,9 +4,10 @@ const userController = require('../controllers/userController');
 const { verifyToken, requireRole } = require('../middleware/authMiddleware');
 
 // Authenticated user profile & security (Task 89)
-// Note: /profile and /change-password MUST precede /:id routes
+// Note: /profile, /change-password, and /change-admin-password MUST precede /:id routes
 router.put('/profile', verifyToken, userController.updateProfile);
 router.put('/change-password', verifyToken, userController.changePassword);
+router.put('/change-admin-password', verifyToken, userController.changeAdminPassword);
 
 // Super Admin staff listing (Task 90)
 router.get('/', verifyToken, requireRole('super_admin'), userController.getAllUsers);

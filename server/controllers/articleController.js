@@ -141,6 +141,7 @@ async function getAllArticles(req, res, next) {
         a.title,
         a.slug,
         a.summary,
+        a.content,
         a.cover_image,
         a.status,
         a.is_featured,
@@ -164,7 +165,11 @@ async function getAllArticles(req, res, next) {
       LEFT JOIN departments d ON a.department_id = d.id
       LEFT JOIN users u ON a.author_id = u.id
       ${whereSql}
-      ORDER BY a.published_at DESC, a.created_at DESC
+      ${
+        req.user && (status === 'all' || !status || status === 'draft')
+          ? 'ORDER BY COALESCE(a.updated_at, a.created_at) DESC'
+          : 'ORDER BY COALESCE(a.published_at, a.created_at) DESC, a.created_at DESC'
+      }
       LIMIT ? OFFSET ?
     `;
 
@@ -249,7 +254,7 @@ async function getArticleBySlugOrId(req, res, next) {
         });
       }
 
-      const isPrivileged = ['super_admin', 'editor'].includes(req.user.role);
+      const isPrivileged = ['super_admin', 'superadmin', 'editor', 'admin'].includes(req.user.role);
       const isAuthor = req.user.id === article.author_id;
 
       if (!isPrivileged && !isAuthor) {
@@ -432,7 +437,7 @@ async function createArticle(req, res, next) {
     const authorId = req.user.id;
 
     // Workflow permissions for status (Task 94)
-    const isEditorial = ['super_admin', 'editor'].includes(req.user.role);
+    const isEditorial = ['super_admin', 'superadmin', 'editor', 'admin'].includes(req.user.role);
     let normalizedRequested = requestedStatus ? String(requestedStatus).toLowerCase().trim() : null;
     if (normalizedRequested === 'under_review' || normalizedRequested === 'pending_review') {
       normalizedRequested = 'in_review';
@@ -575,22 +580,14 @@ async function updateArticle(req, res, next) {
     }
 
     const currentArticle = existing[0];
-    const isEditorial = ['super_admin', 'editor'].includes(req.user.role);
+    const isEditorial = ['super_admin', 'superadmin', 'editor', 'admin'].includes(req.user.role);
     const isAuthor = req.user.id === currentArticle.author_id;
 
-    // Authorization checks
+    // Authorization checks: Superadmin, Editor, or Article Author can edit
     if (!isEditorial && !isAuthor) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden: You do not have permission to edit this article',
-      });
-    }
-
-    // Reporters can only edit drafts, pitches, or in_review articles
-    if (!isEditorial && currentArticle.status === 'published') {
-      return res.status(403).json({
-        success: false,
-        error: 'Reporters cannot edit published articles. Contact an editor for updates.',
       });
     }
 
@@ -605,13 +602,6 @@ async function updateArticle(req, res, next) {
         normalized = 'in_review';
       }
 
-      if (!isEditorial && (normalized === 'published' || normalized === 'scheduled')) {
-        return res.status(403).json({
-          success: false,
-          error: 'Forbidden: Reporters cannot directly publish or schedule articles. Submit for editorial review instead.',
-        });
-      }
-
       if (isEditorial) {
         updatedStatus = normalized;
         if (updatedStatus === 'published' && !publishedAt) {
@@ -620,9 +610,16 @@ async function updateArticle(req, res, next) {
           publishedAt = null;
         }
       } else {
-        // Reporter
-        if (['pitch', 'draft', 'in_review'].includes(normalized)) {
+        // Author can freely edit their published article and keep it published
+        if (normalized === 'published' && currentArticle.status === 'published') {
+          updatedStatus = 'published';
+        } else if (['pitch', 'draft', 'in_review'].includes(normalized)) {
           updatedStatus = normalized;
+        } else if (normalized === 'published' || normalized === 'scheduled') {
+          return res.status(403).json({
+            success: false,
+            error: 'Forbidden: Authors cannot directly schedule or publish unpublished drafts without editorial review.',
+          });
         }
       }
     }
@@ -827,7 +824,7 @@ async function updateArticleStatus(req, res, next) {
     }
 
     const currentArticle = existing[0];
-    const isEditorial = ['super_admin', 'editor'].includes(req.user.role);
+    const isEditorial = ['super_admin', 'superadmin', 'editor', 'admin'].includes(req.user.role);
     const isAuthor = req.user.id === currentArticle.author_id;
 
     if (!isEditorial && !isAuthor) {

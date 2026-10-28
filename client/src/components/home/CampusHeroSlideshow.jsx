@@ -3,57 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
-  MapPin,
-  Camera,
   Calendar,
   ArrowRight,
+  User,
+  Sparkles,
+  Newspaper,
 } from 'lucide-react';
-
-const DEFAULT_CAMPUS_SLIDES = [
-  {
-    type: 'campus',
-    image: '/images/campus/mcc-main-facade.jpg',
-    src: '/images/campus/mcc-main-facade.jpg',
-    title: 'Historic Main Quadrangle & Anderson Clock Tower',
-    caption: 'The architectural heart and liberal arts heritage of Madras Christian College since 1837.',
-    category: 'TAMBARAM SANCTUARY',
-    tag: 'COLLEGIATE FRONTISPIECE • TAMBARAM ESTATE',
-  },
-  {
-    type: 'campus',
-    image: '/images/campus/mcc-hall-heritage.jpg',
-    src: '/images/campus/mcc-hall-heritage.jpg',
-    title: 'Collegiate Halls of Residence & Living Heritage',
-    caption: 'Centuries of student camaraderie, hall governance, and collegiate fellowship.',
-    category: 'RESIDENTIAL HERITAGE',
-    tag: 'COLLEGIATE FRONTISPIECE • TAMBARAM ESTATE',
-  },
-  {
-    type: 'campus',
-    image: '/images/campus/mcc-scrub-jungle.jpg',
-    src: '/images/campus/mcc-scrub-jungle.jpg',
-    title: '365-Acre Scrub Jungle & Natural Flora Canopy',
-    caption: 'Pristine biodiversity, deer trails, and protected bird sanctuaries in Tambaram.',
-    category: 'ECOLOGICAL RESERVE',
-    tag: 'COLLEGIATE FRONTISPIECE • TAMBARAM ESTATE',
-  },
-  {
-    type: 'campus',
-    image: '/images/campus/mcc-campus-life.jpg',
-    src: '/images/campus/mcc-campus-life.jpg',
-    title: 'Miller Memorial Quad & Student Pathways',
-    caption: 'Scholarly life, vibrant assemblies, and academic pursuits under the scrub jungle trees.',
-    category: 'CAMPUS PATHWAYS',
-    tag: 'COLLEGIATE FRONTISPIECE • TAMBARAM ESTATE',
-  },
-];
+import { usePageSettings } from '../../context/PageSettingsContext';
 
 /**
  * Normalizes cover image URLs to support both external and local server uploads.
  */
 function getMediaUrl(url) {
-  if (!url) return '/images/campus/mcc-main-facade.jpg';
-  if (url.startsWith('/images/')) return url;
+  if (!url) return null;
+  if (url.startsWith('/images/') || url.startsWith('/assets/')) return url;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   const apiBase =
     (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
@@ -63,7 +26,7 @@ function getMediaUrl(url) {
 }
 
 /**
- * Format timestamp into readable date string.
+ * Format timestamp into readable collegiate date string.
  */
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -79,108 +42,106 @@ function formatDate(dateStr) {
 }
 
 /**
- * CampusHeroSlideshow Component
- * - 80% latest published news articles with uploaded cover images.
- * - 20% authentic campus architecture and heritage photographs.
- * - Dynamic overlays, category badges, headline bar, and direct article routing.
- * - Auto-transitions every 4.5 seconds with 1000ms cross-fade.
+ * Authentic collegiate broadsheet byline.
  */
-export default function CampusHeroSlideshow({ articles = [], images = null }) {
+function formatByline(authorName, departmentName) {
+  if (!authorName) {
+    return departmentName ? `${departmentName} Desk` : 'Editorial Bureau';
+  }
+  const clean = String(authorName).trim();
+  const lower = clean.toLowerCase();
+  if (lower.includes('root') || lower === 'admin' || lower === 'administrator') {
+    return departmentName ? `${departmentName} Desk` : 'Editorial Bureau';
+  }
+  return clean;
+}
+
+/**
+ * Dynamic Article Hero Slideshow
+ * - 100% dynamic display of the cover images, headings, and subheadings of recent articles.
+ * - Strictly zero static campus architectural photos.
+ * - Provides an immediate "glance into the news" with headline, subheading summary, category, date, and author.
+ * - Direct routing to the full article on click.
+ */
+export default function CampusHeroSlideshow({
+  articles = [],
+  customSlides = null,
+  speedMs = null,
+}) {
   const navigate = useNavigate();
+  const { settings } = usePageSettings();
 
-  // Assemble dynamic queue with 80% news and 20% campus photos
+  // Assemble dynamic queue strictly from recent articles
   const slides = useMemo(() => {
-    if (images && images.length > 0) return images;
+    // 1. If Superadmin provided curated custom slides with articles, use those
+    const curated = customSlides || settings.slideshow_custom_slides;
+    if (Array.isArray(curated) && curated.length > 0) {
+      return curated.map((s, idx) => ({
+        id: s.id || `custom-${idx}`,
+        title: s.title,
+        subheading: s.caption || s.subheading || s.summary || '',
+        image: s.image,
+        category: s.category || 'CAMPUS DISPATCH',
+        author: s.author || 'Editorial Bureau',
+        date: s.date || null,
+        slug: s.slug || null,
+        link: s.link || (s.slug ? `/article/${s.slug}` : null),
+        is_breaking: Boolean(s.is_breaking),
+      }));
+    }
 
-    const validNews = (articles || []).filter(
-      (a) => a && a.cover_image && typeof a.cover_image === 'string' && a.cover_image.trim() !== ''
+    // 2. Otherwise, extract recent published articles (up to 6 latest)
+    const validArticles = (articles || []).filter(
+      (a) => a && a.title && typeof a.title === 'string' && a.title.trim() !== ''
     );
 
-    // If no news articles with images exist, fall back 100% to campus heritage photos
-    if (validNews.length === 0) {
-      return DEFAULT_CAMPUS_SLIDES;
+    if (validArticles.length === 0) {
+      return [];
     }
 
-    const newsSlides = validNews.slice(0, 5).map((a) => ({
-      type: 'news',
-      image: a.cover_image,
-      src: a.cover_image,
-      title: a.title,
-      caption: a.summary || 'Click to read full dispatch from the Madras Christian College Gazette.',
-      category: a.category_name || a.department_name || 'CAMPUS DISPATCH',
-      slug: a.slug,
-      tag: 'LATEST DISPATCH',
-      published_at: a.published_at || a.created_at,
+    // Take top 6 recent articles
+    return validArticles.slice(0, 6).map((art, idx) => ({
+      id: art.id || `art-${idx}`,
+      title: art.title,
+      subheading:
+        art.summary ||
+        art.subheading ||
+        art.excerpt ||
+        'Read the verified dispatch from the Madras Christian College broadsheet press.',
+      image: art.cover_image || null,
+      category: art.category_name || art.department_name || 'CAMPUS NEWS',
+      author: formatByline(art.author_name, art.department_name),
+      date: art.published_at || art.created_at,
+      slug: art.slug,
+      link: art.slug ? `/article/${art.slug}` : '/',
+      is_breaking: Boolean(art.is_breaking),
     }));
-
-    const queue = [];
-
-    // When 1 to 4 unique news slides exist, cycle them across 4 news slots (80%) + 1 campus photo (20%)
-    if (newsSlides.length < 5) {
-      for (let i = 0; i < 4; i++) {
-        const item = newsSlides[i % newsSlides.length];
-        queue.push({
-          ...item,
-          slideKey: `news-${i}-${item.slug || 'art'}`,
-        });
-      }
-      queue.push({
-        ...DEFAULT_CAMPUS_SLIDES[0],
-        slideKey: 'campus-0',
-      });
-      return queue;
-    }
-
-    // When 5 news slides exist, construct two 80/20 cycles (4 news + 1 campus each)
-    for (let i = 0; i < 4; i++) {
-      queue.push({
-        ...newsSlides[i],
-        slideKey: `news-${i}-${newsSlides[i].slug}`,
-      });
-    }
-    queue.push({
-      ...DEFAULT_CAMPUS_SLIDES[0],
-      slideKey: 'campus-0',
-    });
-
-    for (let i = 0; i < 4; i++) {
-      const idx = (4 + i) % newsSlides.length;
-      queue.push({
-        ...newsSlides[idx],
-        slideKey: `news-${4 + i}-${newsSlides[idx].slug}`,
-      });
-    }
-    queue.push({
-      ...DEFAULT_CAMPUS_SLIDES[1 % DEFAULT_CAMPUS_SLIDES.length],
-      slideKey: 'campus-1',
-    });
-
-    return queue;
-  }, [articles, images]);
+  }, [articles, customSlides, settings.slideshow_custom_slides]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef(null);
 
-  // Keep active index in bounds if queue length changes
+  // Keep active index in bounds if slides change
   useEffect(() => {
-    if (activeIndex >= slides.length) {
+    if (slides.length > 0 && activeIndex >= slides.length) {
       setActiveIndex(0);
     }
   }, [slides.length, activeIndex]);
 
-  // Auto-slide transition every 4.5s (pauses on hover)
+  // Auto-slide transition delay (pauses on hover)
+  const transitionSpeed = Number(speedMs) || Number(settings.slideshow_speed_ms) || 4500;
   useEffect(() => {
     if (isPaused || slides.length <= 1) return;
 
     timerRef.current = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % slides.length);
-    }, 4500);
+    }, transitionSpeed);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPaused, slides.length]);
+  }, [isPaused, slides.length, transitionSpeed]);
 
   const handlePrev = () => {
     setActiveIndex((prev) => (prev - 1 + slides.length) % slides.length);
@@ -191,107 +152,140 @@ export default function CampusHeroSlideshow({ articles = [], images = null }) {
   };
 
   const currentSlide = slides[activeIndex] || slides[0];
-  const isNews = currentSlide?.type === 'news';
 
   const handleClickSlide = () => {
-    if (isNews && currentSlide?.slug) {
+    if (currentSlide?.link) {
+      if (currentSlide.link.startsWith('http://') || currentSlide.link.startsWith('https://')) {
+        window.open(currentSlide.link, '_blank');
+      } else {
+        navigate(currentSlide.link);
+      }
+    } else if (currentSlide?.slug) {
       navigate(`/article/${currentSlide.slug}`);
     }
   };
 
+  // If no articles exist at all, show an authentic empty newsroom state (NO static campus photos)
+  if (!slides || slides.length === 0) {
+    return (
+      <div className="relative w-full h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[460px] rounded-lg overflow-hidden border border-[#C5A059]/40 shadow-sm bg-radial from-[#19354d] to-[#0A1926] p-8 flex flex-col justify-center items-center text-center text-white select-none">
+        <div className="w-16 h-16 rounded-full bg-[#C5A059]/10 border border-[#C5A059]/40 flex items-center justify-center mb-4 text-[#C5A059]">
+          <Newspaper className="w-8 h-8" />
+        </div>
+        <span className="text-xs font-serif font-bold uppercase tracking-widest text-[#C5A059] block">
+          Madras Christian College Broadsheet Desk
+        </span>
+        <h3 className="text-xl sm:text-2xl font-serif font-bold text-white mt-1 max-w-lg leading-snug">
+          Today&apos;s News Dispatches Are Being Prepared
+        </h3>
+        <p className="text-xs sm:text-sm font-serif text-gray-300 mt-2 max-w-md leading-relaxed">
+          The editorial bureau is currently assembling front page coverage across our 38 department desks. Verified articles with cover photography will appear here automatically upon publication.
+        </p>
+      </div>
+    );
+  }
+
+  const imageUrl = currentSlide?.image ? getMediaUrl(currentSlide.image) : null;
+
   return (
     <div
       onClick={handleClickSlide}
-      className={`relative w-full h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[460px] aspect-[16/10] sm:aspect-[16/10] lg:aspect-auto rounded-lg overflow-hidden border border-[#C5A059]/40 shadow-sm bg-[#0F2537] group select-none flex flex-col ${
-        isNews ? 'cursor-pointer' : 'cursor-default'
-      }`}
+      className="relative w-full h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[460px] aspect-[16/10] sm:aspect-[16/10] lg:aspect-auto rounded-lg overflow-hidden border border-[#C5A059]/40 shadow-sm bg-[#0F2537] group select-none flex flex-col cursor-pointer"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       role="region"
-      aria-label="Campus Photographic Slideshow"
+      aria-label="Recent Articles Hero Slideshow"
     >
-      {/* 1. TOP INSTITUTIONAL / DISPATCH BADGES */}
+      {/* 1. TOP DISPATCH & CATEGORY BADGES */}
       <div className="absolute top-3 left-3 z-20 flex items-center gap-2 pointer-events-none">
-        {isNews ? (
-          <>
-            <span className="px-2.5 py-1 bg-[#7B1113]/95 text-[#FAF8F5] text-[10px] sm:text-xs font-serif uppercase tracking-widest font-bold rounded shadow-md border border-[#C5A059]/40 backdrop-blur-xs flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] animate-pulse" />
-              {currentSlide?.tag || 'LATEST DISPATCH'}
-            </span>
-            <span className="hidden sm:inline-block px-2.5 py-1 bg-[#0F2537]/85 text-[#C5A059] text-[10px] sm:text-xs font-serif uppercase tracking-wider font-bold rounded backdrop-blur-xs border border-white/10">
-              {currentSlide?.category || 'Gazette Dispatch'}
-            </span>
-          </>
+        {currentSlide.is_breaking ? (
+          <span className="px-2.5 py-1 bg-[#581A20] text-white text-[10px] sm:text-xs font-serif uppercase tracking-widest font-bold rounded shadow-md border border-[#C5A059]/50 flex items-center gap-1.5 animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059]" />
+            BREAKING DISPATCH
+          </span>
         ) : (
-          <>
-            <span className="px-2.5 py-1 bg-[#0F2537]/90 text-[#C5A059] text-[10px] sm:text-xs font-serif uppercase tracking-widest font-bold rounded shadow-md border border-[#C5A059]/30 backdrop-blur-xs flex items-center gap-1.5">
-              <Camera className="w-3.5 h-3.5 text-[#C5A059]" />
-              {currentSlide?.tag || 'COLLEGIATE FRONTISPIECE • TAMBARAM ESTATE'}
-            </span>
-            <span className="hidden sm:inline-block px-2.5 py-1 bg-black/60 text-[#FAF8F5] text-[10px] sm:text-xs font-mono rounded backdrop-blur-xs border border-white/10">
-              Tambaram Estate &bull; Est. 1837
-            </span>
-          </>
+          <span className="px-2.5 py-1 bg-[#581A20]/95 text-white text-[10px] sm:text-xs font-serif uppercase tracking-widest font-bold rounded shadow-md border border-[#C5A059]/40 flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-[#C5A059]" />
+            RECENT DISPATCH
+          </span>
         )}
+
+        <span className="px-2.5 py-1 bg-[#0F2537]/90 text-[#C5A059] text-[10px] sm:text-xs font-serif uppercase tracking-wider font-bold rounded border border-white/10 backdrop-blur-xs">
+          {currentSlide.category}
+        </span>
       </div>
 
-      {/* 2. CROSS-FADING SLIDES STACK */}
-      <div className="relative flex-1 w-full h-full overflow-hidden">
+      {/* 2. DYNAMIC COVER IMAGES STACK */}
+      <div className="relative flex-1 w-full h-full overflow-hidden bg-[#0A1926]">
         {slides.map((slide, idx) => {
           const isActive = idx === activeIndex;
-          const imageUrl = getMediaUrl(slide.image || slide.src);
+          const slideImg = slide.image ? getMediaUrl(slide.image) : null;
+
           return (
             <div
-              key={slide.slideKey || idx}
+              key={slide.id || idx}
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
                 isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
               }`}
             >
-              <img
-                src={imageUrl}
-                alt={slide.title}
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = '/images/campus/mcc-main-facade.jpg';
-                }}
-                className="w-full h-full object-cover transform scale-100 group-hover:scale-102 transition-transform duration-1000"
-              />
+              {slideImg ? (
+                <img
+                  src={slideImg}
+                  alt={slide.title}
+                  loading={idx === 0 ? 'eager' : 'lazy'}
+                  className="w-full h-full object-cover transform scale-100 group-hover:scale-102 transition-transform duration-1000"
+                />
+              ) : (
+                /* Editorial backdrop if article cover is unavailable */
+                <div className="w-full h-full bg-radial from-[#1b3d5b] via-[#0F2537] to-[#08131d] flex items-center justify-center p-8">
+                  <img
+                    src="/assets/mcc-crest.png"
+                    alt=""
+                    className="w-32 h-32 object-contain opacity-20 filter grayscale brightness-200"
+                  />
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* 3. LOWER GRADIENT CAPTION OVERLAY */}
-      <div className="absolute bottom-0 inset-x-0 z-20 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-4 sm:p-5 text-white flex flex-col justify-end pointer-events-none">
-        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+      {/* 3. LOWER GRADIENT CAPTION OVERLAY: A GLANCE INTO THE NEWS */}
+      <div className="absolute bottom-0 inset-x-0 z-20 bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-12 pb-5 px-5 sm:px-6 text-white flex flex-col justify-end pointer-events-none">
+        {/* Metadata row: Category, Date, Author */}
+        <div className="flex items-center gap-3 mb-2 flex-wrap text-xs font-serif">
           <span className="px-2 py-0.5 bg-[#C5A059] text-[#0F2537] text-[10px] font-sans font-bold uppercase tracking-wider rounded">
-            {currentSlide?.category || (isNews ? 'CAMPUS DISPATCH' : 'TAMBARAM SANCTUARY')}
+            {currentSlide.category}
           </span>
-          {isNews && currentSlide?.published_at ? (
-            <span className="text-[10px] font-serif text-gray-300 flex items-center gap-1">
-              <Calendar className="w-3 h-3 inline text-[#C5A059]" />
-              {formatDate(currentSlide.published_at)}
-            </span>
-          ) : (
-            <span className="text-[10px] font-serif text-[#C5A059]/90 hidden sm:inline flex items-center gap-1">
-              <MapPin className="w-3 h-3 inline" /> 365-Acre Sanctuary
+
+          {currentSlide.date && (
+            <span className="text-[11px] text-gray-300 flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-[#C5A059]" />
+              {formatDate(currentSlide.date)}
             </span>
           )}
-          {isNews && (
-            <span className="text-[10px] font-serif text-[#C5A059] font-semibold ml-auto hidden sm:inline-flex items-center gap-1">
-              Read Dispatch <ArrowRight className="w-3 h-3 inline" />
+
+          {currentSlide.author && (
+            <span className="text-[11px] text-gray-300 hidden sm:flex items-center gap-1">
+              <User className="w-3 h-3 text-[#C5A059]" />
+              By {currentSlide.author}
             </span>
           )}
+
+          <span className="text-[11px] font-serif text-[#C5A059] font-semibold ml-auto hidden sm:inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+            Read Full Dispatch <ArrowRight className="w-3.5 h-3.5" />
+          </span>
         </div>
 
-        <h3 className="font-serif font-bold text-base sm:text-xl lg:text-2xl text-white tracking-wide drop-shadow-sm leading-snug line-clamp-2 max-w-2xl group-hover:text-[#C5A059] transition-colors">
-          {currentSlide?.title}
-        </h3>
+        {/* Heading (Title) */}
+        <h2 className="font-serif font-black text-lg sm:text-xl lg:text-2xl text-white tracking-tight leading-snug drop-shadow-md line-clamp-2 max-w-3xl group-hover:text-[#C5A059] transition-colors">
+          {currentSlide.title}
+        </h2>
 
-        {currentSlide?.caption && (
-          <p className="text-xs sm:text-sm font-serif italic text-gray-300 mt-1 line-clamp-1 max-w-xl">
-            {currentSlide.caption}
+        {/* Subheading (Glance into the news) */}
+        {currentSlide.subheading && (
+          <p className="text-xs sm:text-sm font-serif text-gray-200 mt-1.5 line-clamp-2 max-w-2xl leading-relaxed drop-shadow-sm font-normal">
+            {currentSlide.subheading}
           </p>
         )}
       </div>
@@ -303,8 +297,8 @@ export default function CampusHeroSlideshow({ articles = [], images = null }) {
           e.stopPropagation();
           handlePrev();
         }}
-        aria-label="Previous Slide"
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-[#7B1113] text-white border border-[#C5A059]/60 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer focus:opacity-100 focus:outline-hidden"
+        aria-label="Previous Recent Story"
+        className="absolute left-3 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-[#581A20] text-white border border-[#C5A059]/60 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer focus:opacity-100"
       >
         <ChevronLeft className="w-5 h-5 text-white" />
       </button>
@@ -315,15 +309,15 @@ export default function CampusHeroSlideshow({ articles = [], images = null }) {
           e.stopPropagation();
           handleNext();
         }}
-        aria-label="Next Slide"
-        className="absolute right-3 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-[#7B1113] text-white border border-[#C5A059]/60 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer focus:opacity-100 focus:outline-hidden"
+        aria-label="Next Recent Story"
+        className="absolute right-3 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-[#581A20] text-white border border-[#C5A059]/60 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer focus:opacity-100"
       >
         <ChevronRight className="w-5 h-5 text-white" />
       </button>
 
-      {/* 5. CENTERED DOT PAGINATION INDICATORS */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-xs border border-white/10">
-        {slides.map((s, dotIdx) => (
+      {/* 5. SLIDE INDICATOR BAR */}
+      <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 bg-black/50 px-2.5 py-1 rounded-full backdrop-blur-xs border border-white/10">
+        {slides.map((_, dotIdx) => (
           <button
             key={dotIdx}
             type="button"
@@ -331,7 +325,7 @@ export default function CampusHeroSlideshow({ articles = [], images = null }) {
               e.stopPropagation();
               setActiveIndex(dotIdx);
             }}
-            aria-label={`Go to slide ${dotIdx + 1} (${s.type === 'news' ? 'News Dispatch' : 'Collegiate Heritage'})`}
+            aria-label={`Jump to recent dispatch ${dotIdx + 1}`}
             className={`transition-all duration-300 rounded-full cursor-pointer ${
               dotIdx === activeIndex
                 ? 'w-6 h-1.5 bg-[#C5A059]'

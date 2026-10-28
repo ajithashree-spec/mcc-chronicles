@@ -9,6 +9,7 @@ import TrendingStories from '../components/broadsheet/TrendingStories';
 import CampusPhotoStrip from '../components/broadsheet/CampusPhotoStrip';
 import CampusHeroSlideshow from '../components/home/CampusHeroSlideshow';
 import VerticalNewsTicker from '../components/home/VerticalNewsTicker';
+import { usePageSettings } from '../context/PageSettingsContext';
 import {
   ArrowRight,
   AlertTriangle,
@@ -45,6 +46,7 @@ function BroadsheetSkeleton() {
 
 export default function Home() {
   const { articles, loading, error, refetch } = useArticles({ limit: 12 });
+  const { settings } = usePageSettings();
   const [circulars, setCirculars] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -96,29 +98,82 @@ export default function Home() {
     };
   }, []);
 
+  const hasArticles = articles && articles.length > 0;
+
+  // 1. Curated Lead Story assignment (from Superadmin page_settings or fallback to latest)
+  const leadArticle = React.useMemo(() => {
+    if (!hasArticles) return null;
+    if (settings.curated_lead_article_id) {
+      const found = articles.find((a) => String(a.id) === String(settings.curated_lead_article_id));
+      if (found) return found;
+    }
+    return articles[0];
+  }, [articles, settings.curated_lead_article_id, hasArticles]);
+
+  // 2. Curated Secondary Lead Stories (from Superadmin page_settings or fallback to next 4)
+  const secondaryArticles = React.useMemo(() => {
+    if (!hasArticles) return [];
+    const pool = articles.filter((a) => !leadArticle || String(a.id) !== String(leadArticle.id));
+
+    if (Array.isArray(settings.curated_secondary_article_ids) && settings.curated_secondary_article_ids.length > 0) {
+      const curated = [];
+      for (const id of settings.curated_secondary_article_ids) {
+        const item = pool.find((a) => String(a.id) === String(id));
+        if (item && !curated.some((c) => String(c.id) === String(item.id))) {
+          curated.push(item);
+        }
+      }
+      if (curated.length > 0) {
+        for (const rem of pool) {
+          if (curated.length >= 4) break;
+          if (!curated.some((c) => String(c.id) === String(rem.id))) {
+            curated.push(rem);
+          }
+        }
+        return curated.slice(0, 4);
+      }
+    }
+
+    return pool.slice(0, 4);
+  }, [articles, leadArticle, settings.curated_secondary_article_ids, hasArticles]);
+
   if (loading && (!articles || articles.length === 0)) {
     return <BroadsheetSkeleton />;
   }
 
-  const hasArticles = articles && articles.length > 0;
-  const leadArticle = hasArticles ? articles[0] : null;
-  const secondaryArticles = hasArticles ? articles.slice(1, 5) : [];
   const popularArticles = hasArticles ? articles : [];
 
-  const tickerBulletins =
-    circulars && circulars.length > 0
-      ? circulars.slice(0, 4).map((c) => ({
-          id: c.id,
-          text: `${c.circular_number || 'GAZETTE'}: ${c.title}`,
-          link: '/circulars',
-          category: 'Gazette',
-        }))
-      : [];
+  const breakingArticleItems = (articles || [])
+    .filter((a) => Boolean(a.is_breaking))
+    .map((a) => ({
+      id: `art-${a.id}`,
+      text: `BREAKING DISPATCH: ${a.title}`,
+      link: `/article/${a.slug}`,
+      category: a.category_name || 'Breaking',
+    }));
+
+  const circularBulletins = (circulars || []).slice(0, 4).map((c) => ({
+    id: `circ-${c.id}`,
+    text: `${c.circular_number || 'GAZETTE'}: ${c.title}`,
+    link: '/circulars',
+    category: 'Gazette',
+  }));
+
+  const configuredTickerItems = Array.isArray(settings.ticker_items) ? settings.ticker_items : [];
+  const tickerBulletins = configuredTickerItems.length > 0
+    ? [...configuredTickerItems, ...breakingArticleItems]
+    : [...breakingArticleItems, ...circularBulletins];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 w-full max-w-full overflow-x-hidden">
       {/* 1. LIVE BREAKING DISPATCH TICKER */}
-      <BreakingTicker items={tickerBulletins} />
+      {settings.ticker_enabled && (
+        <BreakingTicker
+          items={tickerBulletins}
+          speedMs={settings.ticker_speed_ms}
+          enabled={settings.ticker_enabled}
+        />
+      )}
 
       {/* HOMEPAGE SPLIT HERO — LEFT CAMPUS PHOTO SLIDESHOW & RIGHT VERTICAL ROLLING NEWS TICKER */}
       <section className="w-full max-w-full overflow-hidden">

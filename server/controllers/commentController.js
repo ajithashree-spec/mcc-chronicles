@@ -19,7 +19,7 @@ async function getCommentsByArticle(req, res, next) {
       });
     }
 
-    const isEditorial = req.user && ['super_admin', 'editor'].includes(req.user.role);
+    const isEditorial = req.user && ['super_admin', 'superadmin', 'editor', 'admin'].includes(req.user.role);
     const whereClauses = ['article_id = ?'];
     const queryParams = [articleId];
 

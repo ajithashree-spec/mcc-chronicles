@@ -46,7 +46,7 @@ export default function ArticleEditorModal({
   const textareaRef = useRef(null);
 
   const isEditing = Boolean(article && article.id);
-  const isEditorial = ['super_admin', 'editor'].includes(user?.role);
+  const isEditorial = ['super_admin', 'superadmin', 'editor', 'admin'].includes(user?.role);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -75,6 +75,7 @@ export default function ArticleEditorModal({
 
   // Populate data when modal opens or article changes
   useEffect(() => {
+    let isMounted = true;
     if (isOpen) {
       if (article) {
         setTitle(article.title || '');
@@ -95,6 +96,40 @@ export default function ArticleEditorModal({
         );
         setIsFeatured(Boolean(article.is_featured));
         setIsBreaking(Boolean(article.is_breaking));
+
+        // Always fetch the complete article by ID to guarantee full body narrative is hydrated
+        if (article.id) {
+          const fetchPromise =
+            typeof articleService.getArticle === 'function'
+              ? articleService.getArticle(article.id)
+              : typeof articleService.getArticleById === 'function'
+              ? articleService.getArticleById(article.id)
+              : typeof articleService.getArticleBySlug === 'function' && article.slug
+              ? articleService.getArticleBySlug(article.slug)
+              : null;
+
+          if (fetchPromise) {
+            fetchPromise
+              .then((res) => {
+                if (!isMounted) return;
+                const full = res?.data || res;
+                if (full) {
+                  if (full.content !== undefined && full.content !== null) {
+                    setContent(full.content);
+                  }
+                  if (full.title) setTitle(full.title);
+                  if (full.summary) setSummary(full.summary);
+                  if (full.status) setStatus(full.status);
+                  if (full.category_id) setCategoryId(full.category_id);
+                  if (full.department_id) setDepartmentId(String(full.department_id));
+                  if (full.cover_image) setCoverImage(full.cover_image);
+                }
+              })
+              .catch((err) => {
+                console.warn('Could not fetch single article full body:', err);
+              });
+          }
+        }
       } else {
         // Reset for new article
         setTitle('');
@@ -114,6 +149,9 @@ export default function ArticleEditorModal({
       setSuccessMessage(null);
       setImagePreviewError(false);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [isOpen, article, user, isEditorial]);
 
   // Load categories and departments
@@ -185,8 +223,8 @@ export default function ArticleEditorModal({
   };
 
   // Form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, overrideStatus = null) => {
+    if (e && e.preventDefault) e.preventDefault();
     setError(null);
     setSuccessMessage(null);
 
@@ -202,10 +240,8 @@ export default function ArticleEditorModal({
       setError('Please select a broadsheet section / category for this dispatch.');
       return;
     }
-    if (!departmentId) {
-      setError('Please assign this dispatch to one of the 38 Department Bureaus.');
-      return;
-    }
+
+    const targetStatus = overrideStatus || status || (isEditorial ? 'published' : 'draft');
 
     try {
       setSubmitting(true);
@@ -218,8 +254,8 @@ export default function ArticleEditorModal({
         department_id: parseInt(departmentId, 10),
         cover_image: coverImage.trim() || null,
         content: content.trim(),
-        status,
-        scheduled_at: status === 'scheduled' && scheduledAt ? new Date(scheduledAt).toISOString() : null,
+        status: targetStatus,
+        scheduled_at: targetStatus === 'scheduled' && scheduledAt ? new Date(scheduledAt).toISOString() : null,
         is_featured: isFeatured,
         is_breaking: isBreaking,
       };
@@ -391,19 +427,18 @@ export default function ArticleEditorModal({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-serif uppercase tracking-wider font-bold text-gray-800">
-                  Target Department Bureau <span className="text-red-700">*</span>
+                  Target Department Bureau
                 </label>
                 <span className="text-[10px] font-serif text-[#C5A059] font-bold">
                   38 Official Desks
                 </span>
               </div>
               <select
-                required
                 value={departmentId}
                 onChange={(e) => setDepartmentId(e.target.value)}
                 className="w-full px-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon focus:ring-1 focus:ring-mcc-maroon outline-none bg-white font-medium"
               >
-                <option value="">-- Assign to Department (Required) --</option>
+                <option value="">ALL DEPARTMENTS</option>
                 <optgroup label="Aided Stream (Shift I) - 17 Departments">
                   {aidedDepartments.map((dept) => (
                     <option key={dept.id} value={dept.id}>
@@ -585,39 +620,14 @@ export default function ArticleEditorModal({
                   Editorial Lifecycle Status
                 </label>
                 <select
-                  value={status}
+                  value={status === 'published' ? 'published' : 'draft'}
                   onChange={(e) => setStatus(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon outline-none bg-white font-semibold"
                 >
-                  <option value="pitch">Idea / Story Pitch</option>
+                  <option value="published">Published (Live Public Broadsheet)</option>
                   <option value="draft">Draft in Progress</option>
-                  <option value="in_review">Under Editorial Review</option>
-                  {isEditorial && (
-                    <option value="scheduled">Scheduled for Auto-Publishing</option>
-                  )}
-                  {isEditorial && (
-                    <option value="published">Published (Live Public Broadsheet)</option>
-                  )}
-                  {isEditorial && (
-                    <option value="archived">Archived (Withdrawn)</option>
-                  )}
                 </select>
               </div>
-
-              {status === 'scheduled' && (
-                <div>
-                  <label className="block text-xs font-serif font-bold text-gray-700 mb-1">
-                    Scheduled Release Timestamp <span className="text-red-700">*</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required={status === 'scheduled'}
-                    value={scheduledAt}
-                    onChange={(e) => setScheduledAt(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-serif border border-gray-300 rounded focus:border-mcc-maroon outline-none bg-white font-mono"
-                  />
-                </div>
-              )}
 
               <div className="flex items-center gap-2 pt-5">
                 <input
@@ -680,10 +690,10 @@ export default function ArticleEditorModal({
               type="button"
               onClick={(e) => {
                 setStatus('draft');
-                handleSubmit(e);
+                handleSubmit(e, 'draft');
               }}
               disabled={submitting}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-xs font-serif font-bold text-gray-800 rounded transition-colors"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-xs font-serif font-bold text-gray-800 rounded transition-colors cursor-pointer"
             >
               <Save className="w-3.5 h-3.5 inline mr-1 text-gray-600" />
               <span>Save as Draft</span>
@@ -691,16 +701,18 @@ export default function ArticleEditorModal({
 
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={(e) => handleSubmit(e, status || (isEditorial ? 'published' : 'draft'))}
               disabled={submitting}
-              className="px-5 py-2 bg-mcc-maroon hover:bg-mcc-maroon-dark text-white text-xs font-serif uppercase tracking-wider font-bold rounded transition-colors shadow-sm inline-flex items-center gap-1.5"
+              className="px-5 py-2 bg-mcc-maroon hover:bg-mcc-maroon-dark text-white text-xs font-serif uppercase tracking-wider font-bold rounded transition-colors shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
             >
               <Send className="w-3.5 h-3.5 text-mcc-gold" />
               <span>
                 {submitting
                   ? 'Committing...'
                   : isEditing
-                  ? 'Update Dispatch'
+                  ? status === 'published'
+                    ? 'Update & Publish'
+                    : 'Update Dispatch'
                   : status === 'published'
                   ? 'Publish Broadsheet'
                   : 'Submit Dispatch'}

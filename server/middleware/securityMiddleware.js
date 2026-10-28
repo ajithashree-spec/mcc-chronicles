@@ -5,10 +5,12 @@ const helmet = require('helmet');
  * Strict rate limiter for authentication attempts (e.g., /api/auth/login)
  * Limit: 10 requests per 15-minute window per IP.
  */
+const isProd = process.env.NODE_ENV === 'production';
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
-  limit: 10,
+  max: isProd ? 15 : 200,
+  limit: isProd ? 15 : 200,
   standardHeaders: true,
   legacyHeaders: false,
   statusCode: 429,
